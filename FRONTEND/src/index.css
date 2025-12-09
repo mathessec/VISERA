@@ -6,6 +6,16 @@ body {
   font-family: "Inter", system-ui, -apple-system, sans-serif;
 }
 
+/* Ensure buttons are visible */
+button[type="submit"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 44px !important;
+  background-color: #2563eb !important;
+  color: white !important;
+}
+
 /* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
