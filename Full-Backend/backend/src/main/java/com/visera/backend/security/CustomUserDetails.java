@@ -27,7 +27,10 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // Spring Security expects roles as "ROLE_ADMIN", "ROLE_SUPERVISOR", etc.
-        return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
+        return java.util.Collections.singletonList(
+                new SimpleGrantedAuthority("ROLE_" + user.getRole())
+        );
+
     }
 
     @Override

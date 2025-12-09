@@ -55,7 +55,7 @@ public class ProductController {
                             dto.setCategory(product.getCategory());
                             dto.setImageUrl(product.getImageUrl());
                             return dto;
-                        }).toList()
+                        }).collect(java.util.stream.Collectors.toList())
         );
     }
 

@@ -64,7 +64,7 @@ public class SkuController {
         return ResponseEntity.ok(
                 skuService.getAllSkus().stream()
                         .map(mapper::toSkuDTO)
-                        .toList()
+                        .collect(java.util.stream.Collectors.toList())
         );
     }
 }
