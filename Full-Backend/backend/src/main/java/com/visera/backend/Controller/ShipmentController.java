@@ -62,7 +62,8 @@ public class ShipmentController {
     public ResponseEntity<List<ShipmentDTO>> getAllShipments() {
         return ResponseEntity.ok(
                 shipmentService.getAllShipments().stream()
-                        .map(mapper::toShipmentDTO).toList()
+                        .map(mapper::toShipmentDTO).collect(java.util.stream.Collectors.toList())
+
         );
     }
 

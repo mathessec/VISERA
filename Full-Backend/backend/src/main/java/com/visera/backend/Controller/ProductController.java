@@ -74,7 +74,7 @@ public class ProductController {
                             dto.setTotalSkus(productService.getSkuCountByProductId(product.getId()));
                             dto.setCreatedAt(product.getCreatedAt());
                             return dto;
-                        }).toList()
+                        }).collect(java.util.stream.Collectors.toList())
         );
     }
 

@@ -52,7 +52,7 @@ public class TaskController {
     public ResponseEntity<List<TaskDTO>> getTasks(@PathVariable int userId) {
         return ResponseEntity.ok(
                 taskService.getTasksByUser(userId).stream()
-                        .map(mapper::toTaskDTO).toList()
+                        .map(mapper::toTaskDTO).collect(java.util.stream.Collectors.toList())
         );
     }
 
