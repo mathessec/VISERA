@@ -2,6 +2,7 @@ package com.visera.backend.Service;
 
 import com.visera.backend.Entity.User;
 import com.visera.backend.Repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,13 +11,22 @@ import java.util.List;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository repo;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository repo) {
+    public UserServiceImpl(UserRepository repo, PasswordEncoder passwordEncoder) {
         this.repo = repo;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public User createUser(User user) {
+        // Normalize role and encode password when creating users from admin UI
+        if (user.getRole() != null) {
+            user.setRole(user.getRole().toUpperCase());
+        }
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
         return repo.save(user);
     }
 
@@ -35,8 +45,16 @@ public class UserServiceImpl implements UserService {
         return repo.findById(id).map(user -> {
             user.setName(updatedUser.getName());
             user.setEmail(updatedUser.getEmail());
-            user.setPassword(updatedUser.getPassword());
-            user.setRole(updatedUser.getRole());
+
+            // Only update password if a new one is provided
+            if (updatedUser.getPassword() != null && !updatedUser.getPassword().isBlank()) {
+                user.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+            }
+
+            if (updatedUser.getRole() != null) {
+                user.setRole(updatedUser.getRole().toUpperCase());
+            }
+
             return repo.save(user);
         }).orElse(null);
     }

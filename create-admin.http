@@ -1,0 +1,20 @@
+# Create Admin User
+# Use this file with REST Client extension in VS Code
+# Or copy the curl command below
+
+### Register Admin User
+POST http://localhost:8081/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Admin User",
+  "email": "admin@visera.com",
+  "password": "admin123",
+  "role": "ADMIN"
+}
+
+### Or use this curl command:
+# curl -X POST http://localhost:8081/api/auth/register \
+#   -H "Content-Type: application/json" \
+#   -d '{"name":"Admin User","email":"admin@visera.com","password":"admin123","role":"ADMIN"}'
+
