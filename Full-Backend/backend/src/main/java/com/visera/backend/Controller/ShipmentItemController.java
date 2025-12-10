@@ -63,7 +63,9 @@ public class ShipmentItemController {
     public ResponseEntity<List<ShipmentItemDTO>> getItems(@PathVariable int shipmentId) {
         return ResponseEntity.ok(
                 shipmentItemService.getItemsByShipment(shipmentId).stream()
-                        .map(mapper::toShipmentItemDTO).toList()
+                        .map(mapper::toShipmentItemDTO)
+                        .collect(java.util.stream.Collectors.toList())
+
         );
     }
 

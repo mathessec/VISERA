@@ -49,7 +49,8 @@ public class NotificationController {
     public ResponseEntity<List<NotificationDTO>> getByUser(@PathVariable int userId) {
         return ResponseEntity.ok(
                 notificationService.getNotificationsByUser(userId).stream()
-                        .map(mapper::toNotificationDTO).toList()
+                        .map(mapper::toNotificationDTO).collect(java.util.stream.Collectors.toList())
+
         );
     }
 

@@ -44,7 +44,8 @@ public class VerificationLogController {
     public ResponseEntity<List<VerificationDTO>> getLogs(@PathVariable int itemId) {
         return ResponseEntity.ok(
                 verificationLogService.getLogsByShipmentItem(itemId).stream()
-                        .map(mapper::toVerificationDTO).toList()
+                        .map(mapper::toVerificationDTO).collect(java.util.stream.Collectors.toList())
+
         );
     }
 
