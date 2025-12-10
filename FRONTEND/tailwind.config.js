@@ -38,18 +38,54 @@ export default {
           500: "#EF4444",
           600: "#DC2626",
         },
+        destructive: {
+          DEFAULT: "#EF4444",
+          foreground: "#ffffff",
+        },
         purple: {
           DEFAULT: "#8B5CF6",
+          50: "#F5F3FF",
+          100: "#EDE9FE",
           500: "#8B5CF6",
           600: "#7C3AED",
         },
+        // REFERENCE_UI color tokens
+        background: "var(--background, #ffffff)",
+        foreground: "var(--foreground, #111827)",
+        card: {
+          DEFAULT: "var(--card, #ffffff)",
+          foreground: "var(--card-foreground, #111827)",
+        },
+        popover: {
+          DEFAULT: "var(--popover, #ffffff)",
+          foreground: "var(--popover-foreground, #111827)",
+        },
+        secondary: {
+          DEFAULT: "var(--secondary, #f3f4f6)",
+          foreground: "var(--secondary-foreground, #111827)",
+        },
+        muted: {
+          DEFAULT: "var(--muted, #ececf0)",
+          foreground: "var(--muted-foreground, #717182)",
+        },
+        accent: {
+          DEFAULT: "var(--accent, #e9ebef)",
+          foreground: "var(--accent-foreground, #111827)",
+        },
+        border: "var(--border, rgba(0, 0, 0, 0.1))",
+        input: "var(--input, transparent)",
+        ring: "var(--ring, #2563EB)",
       },
       spacing: {
         18: "4.5rem",
         88: "22rem",
       },
       borderRadius: {
-        DEFAULT: "0.375rem",
+        DEFAULT: "var(--radius, 0.625rem)",
+        sm: "calc(var(--radius, 0.625rem) - 4px)",
+        md: "calc(var(--radius, 0.625rem) - 2px)",
+        lg: "var(--radius, 0.625rem)",
+        xl: "calc(var(--radius, 0.625rem) + 4px)",
       },
     },
   },

@@ -44,7 +44,7 @@ public class SkuController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPERVISOR')")
-    @PutMapping("/update/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<Sku> update(@PathVariable int id, @RequestBody Sku updated) {
         Sku sku = skuService.updateSku(id, updated);
         return (sku != null) ? ResponseEntity.ok(sku) : ResponseEntity.notFound().build();

@@ -32,7 +32,7 @@ STEP 2: START THE FRONTEND
 1. Open a NEW terminal/command prompt
 2. Navigate to frontend directory:
    cd FRONTEND
-
+  // pnpm i
 3. Start the development server:
    pnpm dev
 

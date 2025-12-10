@@ -1,58 +1,50 @@
-import { Bell, Search, User } from "lucide-react";
+import { Bell, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getRole, getUserId } from "../../services/authService";
+import { getRole, getUserId, logout } from "../../services/authService";
 import { formatRole } from "../../utils/formatters";
+import Button from "../common/Button";
+import Badge from "../common/Badge";
 
 export default function Header() {
   const navigate = useNavigate();
   const role = getRole();
   const userId = getUserId();
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  // Get user name - you can update this to get from user context/service
+  const getUserName = () => {
+    const roleMap = {
+      ADMIN: 'Admin User',
+      SUPERVISOR: 'Supervisor',
+      WORKER: 'Worker',
+    };
+    return roleMap[role] || `User #${userId}`;
+  };
+
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center justify-between">
-        {/* Search Bar */}
-        <div className="flex-1 max-w-xl">
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
+    <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6">
+      <div className="flex items-center gap-4">
+        {/* Empty space - removed search bar */}
+      </div>
+      
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" className="relative" onClick={() => navigate("/notifications")}>
+          <Bell className="w-5 h-5" />
+          {/* You can add notification count here */}
+        </Button>
+        
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50">
+          <User className="w-4 h-4 text-gray-600" />
+          <span className="text-gray-700">{getUserName()}</span>
         </div>
-
-        {/* Right Side - Notifications & Profile */}
-        <div className="flex items-center gap-4">
-          {/* Notifications */}
-          <button
-            onClick={() => navigate("/notifications")}
-            className="relative p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Bell size={22} />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
-
-          {/* Profile */}
-          <button
-            onClick={() => navigate("/settings")}
-            className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <div className="text-right">
-              <p className="text-sm font-medium text-gray-900">
-                User #{userId}
-              </p>
-              <p className="text-xs text-gray-500">{formatRole(role)}</p>
-            </div>
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white">
-              <User size={20} />
-            </div>
-          </button>
-        </div>
+        
+        <Button variant="ghost" size="icon" onClick={handleLogout}>
+          <LogOut className="w-5 h-5" />
+        </Button>
       </div>
     </header>
   );

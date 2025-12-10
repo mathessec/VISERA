@@ -1,18 +1,14 @@
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Filter } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Badge from "../../components/common/Badge";
+import Card, { CardHeader, CardTitle, CardContent } from "../../components/common/Card";
 import Button from "../../components/common/Button";
-import Card from "../../components/common/Card";
 import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
-import Table, {
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../components/common/Table";
+import { DataTable, getStatusBadge } from "../../components/shared/DataTable";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../components/common/Dialog";
+import { Label } from "../../components/common/Label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/common/Select";
 import api from "../../services/api";
 
 export default function ProductList() {
@@ -20,6 +16,7 @@ export default function ProductList() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -36,9 +33,23 @@ export default function ProductList() {
     }
   };
 
+  const columns = [
+    { key: 'id', label: 'Product ID' },
+    { key: 'name', label: 'Name' },
+    { key: 'category', label: 'Category' },
+    { key: 'brand', label: 'Brand' },
+    { 
+      key: 'status', 
+      label: 'Status',
+      render: (value) => getStatusBadge(value || 'Active')
+    },
+    { key: 'totalSkus', label: 'Total SKUs' },
+  ];
+
   const filteredProducts = products.filter(
     (product) =>
       product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -46,81 +57,92 @@ export default function ProductList() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Product Management
-          </h1>
-          <p className="text-gray-600 mt-1">Manage your product catalog</p>
+          <h1 className="text-gray-900 mb-2">Product Management</h1>
+          <p className="text-gray-500">Manage your product catalog</p>
         </div>
-        <Button variant="primary" onClick={() => navigate("/products/create")}>
-          <Plus size={20} className="mr-2" />
-          Add Product
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Product
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Product</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="productName">Product Name</Label>
+                <Input id="productName" placeholder="Enter product name" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="electronics">Electronics</SelectItem>
+                    <SelectItem value="accessories">Accessories</SelectItem>
+                    <SelectItem value="office">Office</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="brand">Brand</Label>
+                <Input id="brand" placeholder="Enter brand name" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button className="flex-1" onClick={() => setIsDialogOpen(false)}>Create Product</Button>
+                <Button variant="outline" className="flex-1" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Search */}
       <Card>
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <Input
-              placeholder="Search products by name or category..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-            />
+        <CardHeader>
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button variant="outline">
+              <Filter className="w-4 h-4 mr-2" />
+              Filter
+            </Button>
           </div>
-          <Button variant="outline">
-            <Search size={20} className="mr-2" />
-            Search
-          </Button>
-        </div>
-      </Card>
-
-      {/* Products Table */}
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Product ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredProducts.map((product) => (
-              <TableRow key={product.id}>
-                <TableCell>#{product.id}</TableCell>
-                <TableCell className="font-medium">{product.name}</TableCell>
-                <TableCell>{product.category}</TableCell>
-                <TableCell className="max-w-xs truncate">
-                  {product.description}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="green">Active</Badge>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => navigate(`/products/${product.id}`)}
-                  >
-                    View
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No products found
-          </div>
-        )}
+        </CardHeader>
+        <CardContent>
+          <DataTable
+            columns={columns}
+            data={filteredProducts}
+            onEdit={(row) => navigate(`/products/${row.id}/edit`)}
+            onDelete={(row) => console.log('Delete', row)}
+            onView={(row) => navigate(`/products/${row.id}`)}
+          />
+        </CardContent>
       </Card>
     </div>
   );

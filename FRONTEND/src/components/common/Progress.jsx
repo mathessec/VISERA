@@ -1,20 +1,24 @@
-import { cn } from '../../utils/helpers';
+import * as React from "react";
+import * as ProgressPrimitive from "@radix-ui/react-progress";
+import { cn } from "../../utils/helpers";
 
-export default function Progress({ value = 0, max = 100, className, showLabel }) {
-  const percentage = (value / max) * 100;
-  
+function Progress({ className, value, ...props }) {
   return (
-    <div className="w-full">
-      <div className={cn('w-full bg-gray-200 rounded-full h-2', className)}>
-        <div
-          className="bg-primary h-2 rounded-full transition-all duration-300"
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-      {showLabel && (
-        <p className="mt-1 text-xs text-gray-600">{Math.round(percentage)}%</p>
+    <ProgressPrimitive.Root
+      data-slot="progress"
+      className={cn(
+        "bg-primary/20 relative h-2 w-full overflow-hidden rounded-full",
+        className,
       )}
-    </div>
+      {...props}
+    >
+      <ProgressPrimitive.Indicator
+        data-slot="progress-indicator"
+        className="bg-primary h-full w-full flex-1 transition-all"
+        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+      />
+    </ProgressPrimitive.Root>
   );
 }
 
+export { Progress };

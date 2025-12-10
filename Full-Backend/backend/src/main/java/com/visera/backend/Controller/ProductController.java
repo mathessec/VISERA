@@ -41,6 +41,22 @@ public class ProductController {
         return (p != null) ? ResponseEntity.ok(p) : ResponseEntity.notFound().build();
     }
 
+    // Update product
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @PutMapping("/{id}")
+    public ResponseEntity<Product> update(@PathVariable int id, @RequestBody Product updated) {
+        Product p = productService.updateProduct(id, updated);
+        return (p != null) ? ResponseEntity.ok(p) : ResponseEntity.notFound().build();
+    }
+
+    // Delete product
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable int id) {
+        productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // Fot DTO
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
     @GetMapping("/getallproducts")

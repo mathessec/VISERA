@@ -1,36 +1,35 @@
 import { useState, useEffect } from 'react';
-import { Package, AlertTriangle, FileText, Users, ArrowRight } from 'lucide-react';
+import { Package, AlertTriangle, Warehouse, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import MetricCard from '../../components/common/MetricCard';
+import { StatsCard } from '../../components/shared/StatsCard';
 import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import { Link } from 'react-router-dom';
 import Loading from '../../components/common/Loading';
 
 // Mock data - replace with actual API calls
-const stockMovementData = [
-  { month: 'Jan', inbound: 65, outbound: 45 },
-  { month: 'Feb', inbound: 75, outbound: 55 },
-  { month: 'Mar', inbound: 85, outbound: 65 },
-  { month: 'Apr', inbound: 70, outbound: 50 },
-  { month: 'May', inbound: 90, outbound: 70 },
-  { month: 'Jun', inbound: 95, outbound: 75 },
+const stockReports = [
+  { month: 'Jan', inbound: 65, outbound: 45, variance: 20 },
+  { month: 'Feb', inbound: 75, outbound: 55, variance: 20 },
+  { month: 'Mar', inbound: 85, outbound: 65, variance: 20 },
+  { month: 'Apr', inbound: 70, outbound: 50, variance: 20 },
+  { month: 'May', inbound: 90, outbound: 70, variance: 20 },
+  { month: 'Jun', inbound: 95, outbound: 75, variance: 20 },
 ];
 
-const inventoryTrendData = [
-  { month: 'Jan', value: 2400 },
-  { month: 'Feb', value: 2600 },
-  { month: 'Mar', value: 2800 },
-  { month: 'Apr', value: 2700 },
-  { month: 'May', value: 3000 },
-  { month: 'Jun', value: 3200 },
+const quickLinks = [
+  { label: 'Manage Products', path: '/products', icon: Package },
+  { label: 'View Shipments', path: '/shipments', icon: TrendingUp },
+  { label: 'Manage Users', path: '/users', icon: Package },
+  { label: 'Warehouse Layout', path: '/warehouse/zones', icon: Warehouse },
 ];
 
 export default function AdminDashboard() {
   const [metrics, setMetrics] = useState({
-    totalShipments: 248,
-    aiMismatches: 12,
-    totalSKUs: 1547,
-    activeUsers: 45,
+    totalShipments: 156,
+    aiMismatches: 23,
+    totalSKUs: 1248,
+    activeUsers: 42,
   });
   const [loading, setLoading] = useState(false);
 
@@ -43,129 +42,104 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-600 mt-1">Overview of warehouse operations and analytics</p>
+        <h1 className="text-gray-900 mb-2">Admin Dashboard</h1>
+        <p className="text-gray-500">Welcome back! Here's what's happening in your warehouse.</p>
       </div>
 
-      {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
+        <StatsCard
           title="Total Shipments"
           value={metrics.totalShipments}
           icon={Package}
-          color="blue"
-          trend={12}
+          trend={{ value: '12% from last month', isPositive: true }}
+          iconBgColor="bg-blue-50"
+          iconColor="text-blue-600"
         />
-        <MetricCard
+        <StatsCard
           title="AI Mismatches"
           value={metrics.aiMismatches}
           icon={AlertTriangle}
-          color="orange"
-          trend={-5}
+          trend={{ value: '5% from last month', isPositive: false }}
+          iconBgColor="bg-orange-50"
+          iconColor="text-orange-600"
         />
-        <MetricCard
+        <StatsCard
           title="Total SKUs"
-          value={metrics.totalSKUs}
-          icon={FileText}
-          color="purple"
-          trend={8}
+          value={metrics.totalSKUs.toLocaleString()}
+          icon={Warehouse}
+          trend={{ value: '8% from last month', isPositive: true }}
+          iconBgColor="bg-green-50"
+          iconColor="text-green-600"
         />
-        <MetricCard
+        <StatsCard
           title="Active Users"
           value={metrics.activeUsers}
-          icon={Users}
-          color="green"
-          trend={3}
+          icon={TrendingUp}
+          iconBgColor="bg-purple-50"
+          iconColor="text-purple-600"
         />
       </div>
 
-      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Stock Movement Chart */}
         <Card>
           <CardHeader>
             <CardTitle>Stock Movement</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stockMovementData}>
+              <BarChart data={stockReports}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="inbound" fill="#14B8A6" name="Inbound" />
-                <Bar dataKey="outbound" fill="#8B5CF6" name="Outbound" />
+                <Bar dataKey="inbound" fill="#3b82f6" name="Inbound" />
+                <Bar dataKey="outbound" fill="#10b981" name="Outbound" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Inventory Trend Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Inventory Trends</CardTitle>
+            <CardTitle>Inventory Variance</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={inventoryTrendData}>
+              <LineChart data={stockReports}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="value" stroke="#2563EB" name="Inventory Level" strokeWidth={2} />
+                <Line type="monotone" dataKey="variance" stroke="#f59e0b" strokeWidth={2} name="Variance" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle>Quick Links</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button
-              variant="outline"
-              className="h-20 flex-col gap-2"
-              onClick={() => window.location.href = '/products'}
-            >
-              <Package size={24} />
-              <span>Manage Products</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex-col gap-2"
-              onClick={() => window.location.href = '/shipments'}
-            >
-              <ArrowRight size={24} />
-              <span>View Shipments</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex-col gap-2"
-              onClick={() => window.location.href = '/users'}
-            >
-              <Users size={24} />
-              <span>Manage Users</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex-col gap-2"
-              onClick={() => window.location.href = '/warehouse/zones'}
-            >
-              <Package size={24} />
-              <span>Warehouse Layout</span>
-            </Button>
+            {quickLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Link key={link.path} to={link.path}>
+                  <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
+                    <Icon className="w-6 h-6" />
+                    <span>{link.label}</span>
+                  </Button>
+                </Link>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-

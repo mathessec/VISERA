@@ -155,7 +155,9 @@ export default function Login() {
 
             <Button
               type="submit"
-              className="w-full py-3 text-base font-semibold"
+              variant="primary"
+              size="lg"
+              className="w-full text-base font-semibold"
               disabled={loading}
             >
               {loading ? "Signing in..." : "Sign In"}

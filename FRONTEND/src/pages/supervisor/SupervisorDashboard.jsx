@@ -1,134 +1,130 @@
-import { useState, useEffect } from 'react';
-import { Package, AlertTriangle, Users, CheckCircle } from 'lucide-react';
-import MetricCard from '../../components/common/MetricCard';
+import { useState } from 'react';
+import { Truck, AlertTriangle, Users, CheckCircle } from 'lucide-react';
+import { StatsCard } from '../../components/shared/StatsCard';
 import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
+import { Link } from 'react-router-dom';
 
 export default function SupervisorDashboard() {
   const [metrics] = useState({
-    activeShipments: 15,
+    activeShipments: 8,
     pendingApprovals: 5,
     activeWorkers: 12,
-    completedToday: 28,
+    completedToday: 45,
   });
 
-  const [mismatches] = useState([
+  const pendingMismatches = [
     {
       id: 'MIS-001',
-      product: 'Dell Laptop i7',
-      sku: 'DELL-LAP-001',
-      worker: 'John Doe',
-      confidence: '67%',
-      location: 'A-01-R5',
+      predictedSku: 'SKU001',
+      scannedSku: 'SKU002',
+      worker: 'Emily Brown',
+      confidence: 67,
     },
     {
       id: 'MIS-002',
-      product: 'iPhone 15 Pro',
-      sku: 'APPL-IPH-015',
-      worker: 'Jane Smith',
-      confidence: '58%',
-      location: 'B-03-R2',
+      predictedSku: 'SKU005',
+      scannedSku: 'SKU006',
+      worker: 'David Wilson',
+      confidence: 78,
     },
-  ]);
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Supervisor Dashboard</h1>
-        <p className="text-gray-600 mt-1">Monitor operations and manage your team</p>
+        <h1 className="text-gray-900 mb-2">Supervisor Dashboard</h1>
+        <p className="text-gray-500">Monitor operations and manage approvals</p>
       </div>
 
-      {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
+        <StatsCard
           title="Active Shipments"
           value={metrics.activeShipments}
-          icon={Package}
-          color="orange"
+          icon={Truck}
+          iconBgColor="bg-blue-50"
+          iconColor="text-blue-600"
         />
-        <MetricCard
+        <StatsCard
           title="Pending Approvals"
-          value={metrics.pendingApprovals}
+          value={pendingMismatches.length}
           icon={AlertTriangle}
-          color="orange"
+          iconBgColor="bg-orange-50"
+          iconColor="text-orange-600"
         />
-        <MetricCard
+        <StatsCard
           title="Active Workers"
           value={metrics.activeWorkers}
           icon={Users}
-          color="green"
+          iconBgColor="bg-green-50"
+          iconColor="text-green-600"
         />
-        <MetricCard
-          title="Completed Today"
+        <StatsCard
+          title="Tasks Completed Today"
           value={metrics.completedToday}
           icon={CheckCircle}
-          color="purple"
+          iconBgColor="bg-purple-50"
+          iconColor="text-purple-600"
         />
       </div>
 
-      {/* AI Mismatch Alerts */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>AI Mismatch Alerts</CardTitle>
-            <Badge variant="red">NEW</Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {mismatches.map((mismatch) => (
-              <div
-                key={mismatch.id}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <Badge variant="red">{mismatch.id}</Badge>
-                    <span className="font-medium text-gray-900">{mismatch.product}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>AI Mismatch Alerts</CardTitle>
+              <Link to="/supervisor/approvals">
+                <Button variant="outline" size="sm">View All</Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {pendingMismatches.slice(0, 4).map((mismatch) => (
+                <div key={mismatch.id} className="p-3 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-900">{mismatch.id}</span>
+                    <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                      Pending
+                    </Badge>
                   </div>
-                  <div className="text-sm text-gray-600 space-x-4">
-                    <span>SKU: {mismatch.sku}</span>
-                    <span>Worker: {mismatch.worker}</span>
-                    <span>Confidence: {mismatch.confidence}</span>
-                    <span>Location: {mismatch.location}</span>
-                  </div>
+                  <p className="text-gray-600">
+                    Predicted: {mismatch.predictedSku} → Scanned: {mismatch.scannedSku}
+                  </p>
+                  <p className="text-gray-500">
+                    Worker: {mismatch.worker} • Confidence: {mismatch.confidence}%
+                  </p>
                 </div>
-                <Button size="sm" variant="primary">
-                  Resolve
-                </Button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Worker Task Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Worker Task Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {['John Doe', 'Jane Smith', 'Mike Johnson'].map((worker, i) => (
-              <div key={worker} className="p-4 border border-gray-200 rounded-lg space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900">{worker}</span>
-                  <Badge variant={i === 0 ? 'yellow' : 'green'}>
-                    {i === 0 ? 'In Progress' : 'Completed'}
-                  </Badge>
+        <Card>
+          <CardHeader>
+            <CardTitle>Worker Task Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {['John Doe', 'Jane Smith', 'Mike Johnson'].map((worker, i) => (
+                <div key={worker} className="p-4 border border-gray-200 rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900">{worker}</span>
+                    <Badge variant={i === 0 ? 'yellow' : 'green'}>
+                      {i === 0 ? 'In Progress' : 'Completed'}
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <p>Task: Putaway - Ship #SH-{245 + i}</p>
+                    <p>Items: {15 - i * 2} / {20 - i * 3}</p>
+                  </div>
                 </div>
-                <div className="text-sm text-gray-600">
-                  <p>Task: Putaway - Ship #SH-{245 + i}</p>
-                  <p>Items: {15 - i * 2} / {20 - i * 3}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
-

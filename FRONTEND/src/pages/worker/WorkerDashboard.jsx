@@ -1,145 +1,167 @@
 import { useState } from 'react';
-import { Package, MapPin, CheckCircle, Clock } from 'lucide-react';
-import MetricCard from '../../components/common/MetricCard';
+import { PackageSearch, Truck, MapPin, CheckCircle } from 'lucide-react';
+import { StatsCard } from '../../components/shared/StatsCard';
 import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
+import { Link } from 'react-router-dom';
 
 export default function WorkerDashboard() {
   const [metrics] = useState({
-    pendingInbound: 5,
-    pendingOutbound: 3,
-    pendingPutaway: 8,
-    completedToday: 15,
+    pendingInbound: 12,
+    pendingOutbound: 8,
+    pendingPutaway: 5,
+    completedToday: 24,
   });
 
-  const [tasks] = useState([
+  const inboundTasks = [
     {
-      id: 'SH-245',
-      type: 'Inbound',
-      priority: 'HIGH',
-      items: 12,
-      zone: 'Zone A',
-      deadline: '10:30 AM',
+      id: 'IB-2025-001',
+      shipmentId: 'SH-2025-001',
+      vendor: 'TechSupply Co.',
+      items: 45,
+      priority: 'High',
+      expectedTime: '10:00 AM',
+      status: 'Ready to Scan',
     },
     {
-      id: 'SH-246',
-      type: 'Inbound',
-      priority: 'MEDIUM',
+      id: 'IB-2025-002',
+      shipmentId: 'SH-2025-002',
+      vendor: 'ElectroWorks Inc.',
+      items: 32,
+      priority: 'Medium',
+      expectedTime: '11:30 AM',
+      status: 'In Progress',
+    },
+  ];
+
+  const outboundTasks = [
+    {
+      id: 'OB-2025-045',
+      orderId: 'ORD-8821',
+      customer: 'Retail Store #42',
+      items: 15,
+      priority: 'High',
+      deadline: '3:00 PM',
+      status: 'Ready to Pick',
+    },
+    {
+      id: 'OB-2025-046',
+      orderId: 'ORD-8822',
+      customer: 'Online Order',
       items: 8,
-      zone: 'Zone B',
-      deadline: '11:00 AM',
+      priority: 'Medium',
+      deadline: '4:30 PM',
+      status: 'In Progress',
     },
-  ]);
+  ];
+
+  const getPriorityBadge = (priority) => {
+    switch (priority) {
+      case 'High':
+        return <Badge variant="destructive">{priority}</Badge>;
+      case 'Medium':
+        return <Badge className="bg-yellow-100 text-yellow-800">{priority}</Badge>;
+      case 'Low':
+        return <Badge className="bg-green-100 text-green-800">{priority}</Badge>;
+      default:
+        return <Badge>{priority}</Badge>;
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Worker Dashboard</h1>
-          <p className="text-gray-600 mt-1">Your tasks and activities</p>
-        </div>
-        <Button variant="primary">
-          Quick Scan Packaging
-        </Button>
+      <div>
+        <h1 className="text-gray-900 mb-2">Worker Dashboard</h1>
+        <p className="text-gray-500">Your tasks and activities</p>
       </div>
 
-      {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
+        <StatsCard
           title="Pending Inbound"
           value={metrics.pendingInbound}
-          icon={Package}
-          color="blue"
+          icon={PackageSearch}
+          iconBgColor="bg-blue-50"
+          iconColor="text-blue-600"
         />
-        <MetricCard
+        <StatsCard
           title="Pending Outbound"
           value={metrics.pendingOutbound}
-          icon={Package}
-          color="purple"
+          icon={Truck}
+          iconBgColor="bg-purple-50"
+          iconColor="text-purple-600"
         />
-        <MetricCard
+        <StatsCard
           title="Pending Putaway"
           value={metrics.pendingPutaway}
           icon={MapPin}
-          color="green"
+          iconBgColor="bg-green-50"
+          iconColor="text-green-600"
         />
-        <MetricCard
+        <StatsCard
           title="Completed Today"
           value={metrics.completedToday}
           icon={CheckCircle}
-          color="green"
+          iconBgColor="bg-emerald-50"
+          iconColor="text-emerald-600"
         />
       </div>
 
-      {/* AI Mismatch Alerts */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <CardTitle>AI Mismatch Alerts</CardTitle>
-            <Badge variant="red">2 NEW</Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="red">NEW</Badge>
-                    <span className="font-medium">Dell Laptop i7</span>
-                  </div>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p>Expected: DELL-LAP-001 | Scanned: DELL-LAP-002</p>
-                    <p>Location: A-01-R5 | Confidence: 67%</p>
-                  </div>
-                </div>
-                <Button size="sm" variant="primary">
-                  Resolve
-                </Button>
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Inbound Tasks</CardTitle>
+              <Link to="/worker/inbound">
+                <Button variant="outline" size="sm">View All</Button>
+              </Link>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {inboundTasks.map((task) => (
+                <div key={task.id} className="p-3 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-gray-900">{task.shipmentId}</span>
+                    {getPriorityBadge(task.priority)}
+                  </div>
+                  <p className="text-gray-600 text-sm">{task.vendor}</p>
+                  <p className="text-gray-500 text-sm">
+                    {task.items} items • Expected: {task.expectedTime}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Today's Tasks */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Today's Inbound Tasks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                className="p-4 border border-gray-200 rounded-lg space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="font-semibold text-gray-900">{task.id}</span>
-                    <Badge variant={task.priority === 'HIGH' ? 'red' : 'yellow'}>
-                      {task.priority}
-                    </Badge>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Outbound Tasks</CardTitle>
+              <Link to="/worker/picking">
+                <Button variant="outline" size="sm">View All</Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {outboundTasks.map((task) => (
+                <div key={task.id} className="p-3 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-gray-900">{task.orderId}</span>
+                    {getPriorityBadge(task.priority)}
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock size={16} />
-                    <span>{task.deadline}</span>
-                  </div>
+                  <p className="text-gray-600 text-sm">{task.customer}</p>
+                  <p className="text-gray-500 text-sm">
+                    {task.items} items • Deadline: {task.deadline}
+                  </p>
                 </div>
-                <div className="text-sm text-gray-600">
-                  <p>{task.items} items • {task.zone}</p>
-                </div>
-                <Button variant="primary" className="w-full">
-                  Start Scanning
-                </Button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
-

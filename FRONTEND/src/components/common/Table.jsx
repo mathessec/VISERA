@@ -1,58 +1,114 @@
+import * as React from "react";
 import { cn } from '../../utils/helpers';
 
-export default function Table({ children, className, ...props }) {
+function Table({ className, ...props }) {
   return (
-    <div className="overflow-x-auto">
-      <table className={cn('min-w-full divide-y divide-gray-200', className)} {...props}>
-        {children}
-      </table>
+    <div
+      data-slot="table-container"
+      className="relative w-full overflow-x-auto"
+    >
+      <table
+        data-slot="table"
+        className={cn("w-full caption-bottom text-sm", className)}
+        {...props}
+      />
     </div>
   );
 }
 
-export function TableHeader({ children, className, ...props }) {
+function TableHeader({ className, ...props }) {
   return (
-    <thead className={cn('bg-gray-50', className)} {...props}>
-      {children}
-    </thead>
+    <thead
+      data-slot="table-header"
+      className={cn("[&_tr]:border-b bg-gray-50", className)}
+      {...props}
+    />
   );
 }
 
-export function TableBody({ children, className, ...props }) {
+function TableBody({ className, ...props }) {
   return (
-    <tbody className={cn('bg-white divide-y divide-gray-200', className)} {...props}>
-      {children}
-    </tbody>
+    <tbody
+      data-slot="table-body"
+      className={cn("[&_tr:last-child]:border-0 bg-white divide-y divide-gray-200", className)}
+      {...props}
+    />
   );
 }
 
-export function TableRow({ children, className, ...props }) {
+function TableFooter({ className, ...props }) {
   return (
-    <tr className={cn('hover:bg-gray-50 transition-colors', className)} {...props}>
-      {children}
-    </tr>
-  );
-}
-
-export function TableHead({ children, className, ...props }) {
-  return (
-    <th
+    <tfoot
+      data-slot="table-footer"
       className={cn(
-        'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider',
-        className
+        "bg-gray-50 border-t font-medium [&>tr]:last:border-b-0",
+        className,
       )}
       {...props}
-    >
-      {children}
-    </th>
+    />
   );
 }
 
-export function TableCell({ children, className, ...props }) {
+function TableRow({ className, ...props }) {
   return (
-    <td className={cn('px-6 py-4 whitespace-nowrap text-sm text-gray-900', className)} {...props}>
-      {children}
-    </td>
+    <tr
+      data-slot="table-row"
+      className={cn(
+        "hover:bg-gray-50 data-[state=selected]:bg-gray-100 border-b transition-colors",
+        className,
+      )}
+      {...props}
+    />
   );
 }
 
+function TableHead({ className, ...props }) {
+  return (
+    <th
+      data-slot="table-head"
+      className={cn(
+        "text-gray-900 h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+function TableCell({ className, ...props }) {
+  return (
+    <td
+      data-slot="table-cell"
+      className={cn(
+        "p-2 align-middle whitespace-nowrap text-sm text-gray-900 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+function TableCaption({
+  className,
+  ...props
+}) {
+  return (
+    <caption
+      data-slot="table-caption"
+      className={cn("text-gray-500 mt-4 text-sm", className)}
+      {...props}
+    />
+  );
+}
+
+export default Table;
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableCaption,
+};
