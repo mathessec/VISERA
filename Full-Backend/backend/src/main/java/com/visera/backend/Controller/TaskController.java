@@ -27,7 +27,7 @@ public class TaskController {
 
     // Create task (by supervisor)
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
-    @PostMapping("create")
+    @PostMapping("/create")
     public ResponseEntity<Task> create(@RequestBody Task task) {
         return ResponseEntity.ok(taskService.createTask(task));
     }

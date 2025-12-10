@@ -4,8 +4,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface RackRepository extends JpaRepository<Rack, Integer> {
+public interface RackRepository extends JpaRepository<Rack, Long> {
 
-    List<Rack> findByZoneId(int zoneId);
+    List<Rack> findByZoneId(Long zoneId);
 }
 

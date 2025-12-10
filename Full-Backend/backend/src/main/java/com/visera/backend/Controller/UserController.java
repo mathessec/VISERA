@@ -67,6 +67,7 @@ public class UserController {
         dto.setName(user.getName());
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole());
+        dto.setCreatedAt(user.getCreatedAt());
         return dto;
     }
 }

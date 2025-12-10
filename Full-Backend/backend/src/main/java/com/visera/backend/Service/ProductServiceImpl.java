@@ -30,4 +30,21 @@ public class ProductServiceImpl implements ProductService {
     public List<Product> getAllProducts() {
         return repo.findAll();
     }
+
+    @Override
+    public Product updateProduct(int id, Product updated) {
+        return repo.findById(id).map(product -> {
+            product.setName(updated.getName());
+            product.setDescription(updated.getDescription());
+            product.setCategory(updated.getCategory());
+            product.setImageUrl(updated.getImageUrl());
+            // Add any other fields you want to allow updating here
+            return repo.save(product);
+        }).orElse(null);
+    }
+
+    @Override
+    public void deleteProduct(int id) {
+        repo.deleteById(id);
+    }
 }

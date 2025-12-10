@@ -8,4 +8,7 @@ public interface ShipmentService {
     List<Shipment> getAllShipments();
     Shipment updateShipment(int id, Shipment shipment);
     void deleteShipment(int id);
+
+    // Assign a shipment to a user
+    Shipment assignShipment(int shipmentId, int userId);
 }

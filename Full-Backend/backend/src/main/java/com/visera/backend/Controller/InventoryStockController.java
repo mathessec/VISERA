@@ -41,17 +41,30 @@ public class InventoryStockController {
         return ResponseEntity.ok(inventoryStockService.createStock(request));
     }
 
-
     // Get stock for specific SKU + Bin
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
     @GetMapping("/get/{skuId}/{binId}")
     public ResponseEntity<InventoryStock> getStock(
-            @RequestParam int skuId,
-            @RequestParam int binId
+            @PathVariable int skuId,
+            @PathVariable int binId
     ) {
         return ResponseEntity.ok(
                 inventoryStockService.getStock(skuId, binId)
         );
+    }
+
+    // Update stock for specific SKU + Bin
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @PutMapping("/update")
+    public ResponseEntity<InventoryStock> updateStock(
+            @RequestBody InventoryStockRequest request
+    ) {
+        InventoryStock stock = inventoryStockService.updateStock(
+                request.getSkuId(),
+                request.getBinId(),
+                request.getQuantity()
+        );
+        return (stock != null) ? ResponseEntity.ok(stock) : ResponseEntity.notFound().build();
     }
 
     // Get all stock (optional useful API)

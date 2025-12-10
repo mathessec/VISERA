@@ -21,7 +21,7 @@ public class BinServiceImpl implements BinService {
     }
 
     @Override
-    public List<Bin> getBinsByRack(int rackId) {
+    public List<Bin> getBinsByRack(Long rackId) {
         return repo.findByRackId(rackId);
     }
 }
