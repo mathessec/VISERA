@@ -3,6 +3,7 @@ package com.visera.backend.Service;
 
 import com.visera.backend.Entity.Product;
 import com.visera.backend.Repository.ProductRepository;
+import com.visera.backend.Repository.SkuRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,9 +12,11 @@ import java.util.List;
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository repo;
+    private final SkuRepository skuRepository;
 
-    public ProductServiceImpl(ProductRepository repo) {
+    public ProductServiceImpl(ProductRepository repo, SkuRepository skuRepository) {
         this.repo = repo;
+        this.skuRepository = skuRepository;
     }
 
     @Override
@@ -22,7 +25,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Product getProductById(int id) {
+    public Product getProductById(Long id) {
         return repo.findById(id).orElse(null);
     }
 
@@ -32,19 +35,24 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Product updateProduct(int id, Product updated) {
+    public Product updateProduct(Long id, Product updated) {
         return repo.findById(id).map(product -> {
             product.setName(updated.getName());
             product.setDescription(updated.getDescription());
             product.setCategory(updated.getCategory());
-            product.setImageUrl(updated.getImageUrl());
+            product.setStatus(updated.getStatus());
             // Add any other fields you want to allow updating here
             return repo.save(product);
         }).orElse(null);
     }
 
     @Override
-    public void deleteProduct(int id) {
+    public void deleteProduct(Long id) {
         repo.deleteById(id);
+    }
+
+    @Override
+    public long getSkuCountByProductId(Long productId) {
+        return skuRepository.countByProductId(productId);
     }
 }
