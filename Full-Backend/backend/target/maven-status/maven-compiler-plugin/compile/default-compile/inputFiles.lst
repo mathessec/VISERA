@@ -24,6 +24,8 @@ C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backe
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\TaskDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\UserDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\VerificationDTO.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\ZoneStatisticsDTO.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\ZoneUpdateDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\Bin.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\InventoryStock.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\Notification.java

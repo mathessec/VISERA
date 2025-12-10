@@ -1,14 +1,15 @@
 package com.visera.backend.Service;
 
+import java.time.LocalDateTime;
+
+import org.springframework.stereotype.Service;
+
 import com.visera.backend.Entity.Bin;
 import com.visera.backend.Entity.InventoryStock;
 import com.visera.backend.Entity.Sku;
 import com.visera.backend.Repository.BinRepository;
 import com.visera.backend.Repository.InventoryStockRepository;
 import com.visera.backend.Repository.SkuRepository;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
 
 @Service
 public class InventoryStockServiceImpl implements InventoryStockService {
@@ -28,8 +29,8 @@ public class InventoryStockServiceImpl implements InventoryStockService {
     @Override
     public InventoryStock updateStock(int skuId, int binId, int quantity) {
 
-        Sku sku = skuRepo.findById(skuId).orElse(null);
-        Bin bin = binRepo.findById(binId).orElse(null);
+        Sku sku = skuRepo.findById(Long.valueOf(skuId)).orElse(null);
+        Bin bin = binRepo.findById(Long.valueOf(binId)).orElse(null);
 
         if (sku == null || bin == null) return null;
 
@@ -54,8 +55,8 @@ public class InventoryStockServiceImpl implements InventoryStockService {
 
     @Override
     public InventoryStock getStock(int skuId, int binId) {
-        Sku sku = skuRepo.findById(skuId).orElse(null);
-        Bin bin = binRepo.findById(binId).orElse(null);
+        Sku sku = skuRepo.findById(Long.valueOf(skuId)).orElse(null);
+        Bin bin = binRepo.findById(Long.valueOf(binId)).orElse(null);
 
         if (sku == null || bin == null) return null;
 

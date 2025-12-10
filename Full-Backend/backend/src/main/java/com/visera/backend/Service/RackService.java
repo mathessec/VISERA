@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface RackService {
     Rack createRack(Rack rack);
-    List<Rack> getRacksByZone(int zoneId);
+    List<Rack> getRacksByZone(Long zoneId);
 }
 

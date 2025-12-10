@@ -69,6 +69,7 @@ com\visera\backend\Controller\ProductController.class
 com\visera\backend\Repository\RackRepository.class
 com\visera\backend\Service\BinService.class
 com\visera\backend\Entity\ShipmentItem$ShipmentItemBuilder.class
+com\visera\backend\DTOs\ZoneUpdateDTO.class
 com\visera\backend\Entity\InventoryStock.class
 com\visera\backend\Entity\Notification.class
 com\visera\backend\Service\InventoryStockServiceImpl.class
@@ -80,6 +81,7 @@ com\visera\backend\DTOs\LoginResponse.class
 com\visera\backend\DTOs\SkuDTO.class
 com\visera\backend\mapper\EntityMapper.class
 com\visera\backend\Controller\BinController.class
+com\visera\backend\DTOs\ZoneStatisticsDTO.class
 com\visera\backend\Repository\ProductRepository.class
 com\visera\backend\Entity\VerificationLog.class
 com\visera\backend\DTOs\UserDTO.class

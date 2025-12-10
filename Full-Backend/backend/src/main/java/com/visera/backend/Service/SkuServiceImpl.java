@@ -21,7 +21,7 @@ public class SkuServiceImpl implements SkuService {
 
     @Override
     public Sku getSkuById(int id) {
-        return repo.findById(id).orElse(null);
+        return repo.findById(Long.valueOf(id)).orElse(null);
     }
 
     @Override
@@ -31,7 +31,7 @@ public class SkuServiceImpl implements SkuService {
 
     @Override
     public Sku updateSku(int id, Sku updatedSku) {
-        return repo.findById(id).map(sku -> {
+        return repo.findById(Long.valueOf(id)).map(sku -> {
             sku.setSkuCode(updatedSku.getSkuCode());
             sku.setProduct(updatedSku.getProduct());
             sku.setColor(updatedSku.getColor());
@@ -43,7 +43,7 @@ public class SkuServiceImpl implements SkuService {
 
     @Override
     public void deleteSku(int id) {
-        repo.deleteById(id);
+        repo.deleteById(Long.valueOf(id));
     }
 }
 

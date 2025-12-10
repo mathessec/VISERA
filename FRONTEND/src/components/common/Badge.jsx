@@ -1,6 +1,6 @@
-import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva } from "class-variance-authority";
+import * as React from "react";
 import { cn } from "../../utils/helpers";
 
 const badgeVariants = cva(
@@ -8,14 +8,10 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          "border-transparent bg-primary text-white",
-        secondary:
-          "border-transparent bg-gray-100 text-gray-800",
-        destructive:
-          "border-transparent bg-red-100 text-red-800",
-        outline:
-          "text-gray-900 border-gray-300",
+        default: "border-transparent bg-primary text-white",
+        secondary: "border-transparent bg-gray-100 text-gray-800",
+        destructive: "border-transparent bg-red-100 text-red-800",
+        outline: "text-gray-900 border-gray-300",
         // Legacy color variants for backward compatibility
         blue: "border-transparent bg-blue-100 text-blue-800",
         green: "border-transparent bg-green-100 text-green-800",
@@ -29,15 +25,10 @@ const badgeVariants = cva(
     defaultVariants: {
       variant: "default",
     },
-  },
+  }
 );
 
-function Badge({
-  className,
-  variant,
-  asChild = false,
-  ...props
-}) {
+function Badge({ className, variant, asChild = false, ...props }) {
   const Comp = asChild ? Slot : "span";
 
   return (

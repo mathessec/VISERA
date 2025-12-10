@@ -27,7 +27,7 @@ public class RackController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
     @GetMapping("/zone/{zoneId}")
-    public ResponseEntity<List<Rack>> getByZone(@PathVariable int zoneId) {
+    public ResponseEntity<List<Rack>> getByZone(@PathVariable Long zoneId) {
         return ResponseEntity.ok(rackService.getRacksByZone(zoneId));
     }
 }

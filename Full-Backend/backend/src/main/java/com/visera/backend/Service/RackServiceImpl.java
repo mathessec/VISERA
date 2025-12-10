@@ -21,7 +21,7 @@ public class RackServiceImpl implements RackService {
     }
 
     @Override
-    public List<Rack> getRacksByZone(int zoneId) {
+    public List<Rack> getRacksByZone(Long zoneId) {
         return repo.findByZoneId(zoneId);
     }
 }

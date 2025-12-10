@@ -1,20 +1,21 @@
-import { Plus, Search, Filter, MoreVertical, Edit, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { Edit, Filter, MoreVertical, Plus, Search, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import Alert from "../../components/common/Alert";
-import Card, {
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "../../components/common/Card";
+import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
+import Card, { CardContent, CardHeader } from "../../components/common/Card";
 import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
 import Modal from "../../components/common/Modal";
-import Badge from "../../components/common/Badge";
-import { DataTable, getStatusBadge } from "../../components/shared/DataTable";
-import { getAllUsers, createUser, updateUser, deleteUser } from "../../services/userService";
-import { formatDate, formatRole, formatDateTime } from "../../utils/formatters";
+import { DataTable } from "../../components/shared/DataTable";
+import {
+  createUser,
+  deleteUser,
+  getAllUsers,
+  updateUser,
+} from "../../services/userService";
+import { formatDate, formatRole } from "../../utils/formatters";
 import { cn } from "../../utils/helpers";
 
 // Actions Dropdown Component
@@ -24,12 +25,7 @@ function ActionsDropdown({ user, onEdit, onDelete }) {
   return (
     <DropdownMenu.Root open={open} onOpenChange={setOpen}>
       <DropdownMenu.Trigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
-          type="button"
-        >
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" type="button">
           <MoreVertical className="w-4 h-4" />
         </Button>
       </DropdownMenu.Trigger>
@@ -122,7 +118,11 @@ export default function UserManagement() {
         err?.response?.data?.message ||
         err?.message;
 
-      setError(backendMessage ? `Failed to load users: ${backendMessage}` : "Failed to load users");
+      setError(
+        backendMessage
+          ? `Failed to load users: ${backendMessage}`
+          : "Failed to load users"
+      );
     } finally {
       setLoading(false);
     }
@@ -130,14 +130,14 @@ export default function UserManagement() {
 
   // Format User ID as U001, U002, etc.
   const formatUserId = (id) => {
-    return `U${String(id).padStart(3, '0')}`;
+    return `U${String(id).padStart(3, "0")}`;
   };
 
   const columns = [
-    { 
-      key: "id", 
-      label: "User ID", 
-      render: (value) => formatUserId(value)
+    {
+      key: "id",
+      label: "User ID",
+      render: (value) => formatUserId(value),
     },
     { key: "name", label: "Name" },
     {
@@ -166,11 +166,7 @@ export default function UserManagement() {
           Active: "green",
           Inactive: "gray",
         };
-        return (
-          <Badge variant={statusColors[status] || "gray"}>
-            {status}
-          </Badge>
-        );
+        return <Badge variant={statusColors[status] || "gray"}>{status}</Badge>;
       },
     },
     {
@@ -183,10 +179,10 @@ export default function UserManagement() {
         // Format as YYYY-MM-DD HH:mm to match image
         const date = new Date(lastActive);
         const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
         return `${year}-${month}-${day} ${hours}:${minutes}`;
       },
     },
@@ -257,7 +253,9 @@ export default function UserManagement() {
 
     if (!formData.role) {
       errors.role = "Role is required";
-    } else if (!["SUPERVISOR", "WORKER"].includes(formData.role.toUpperCase())) {
+    } else if (
+      !["SUPERVISOR", "WORKER"].includes(formData.role.toUpperCase())
+    ) {
       errors.role = "Role must be Supervisor or Worker";
     }
 
@@ -399,7 +397,9 @@ export default function UserManagement() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-gray-900 text-2xl font-bold mb-2">User Management</h1>
+        <h1 className="text-gray-900 text-2xl font-bold mb-2">
+          User Management
+        </h1>
         <p className="text-gray-500">Manage warehouse staff and their roles</p>
       </div>
 
@@ -431,7 +431,7 @@ export default function UserManagement() {
               <Filter className="w-4 h-4 mr-2" />
               Filter
             </Button>
-            <Button 
+            <Button
               onClick={handleOpenModal}
               className="bg-black text-white hover:bg-gray-800"
             >
@@ -518,8 +518,8 @@ export default function UserManagement() {
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={submitting}
               className="bg-black text-white hover:bg-gray-800 min-w-[100px] border-0"
             >
@@ -535,7 +535,12 @@ export default function UserManagement() {
         onClose={() => {
           setIsEditModalOpen(false);
           setSelectedUser(null);
-          setFormData({ name: "", email: "", password: "", role: "SUPERVISOR" });
+          setFormData({
+            name: "",
+            email: "",
+            password: "",
+            role: "SUPERVISOR",
+          });
           setFormErrors({});
         }}
         title="Edit User"
@@ -596,7 +601,12 @@ export default function UserManagement() {
               onClick={() => {
                 setIsEditModalOpen(false);
                 setSelectedUser(null);
-                setFormData({ name: "", email: "", password: "", role: "SUPERVISOR" });
+                setFormData({
+                  name: "",
+                  email: "",
+                  password: "",
+                  role: "SUPERVISOR",
+                });
                 setFormErrors({});
               }}
               disabled={submitting}
@@ -604,8 +614,8 @@ export default function UserManagement() {
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={submitting}
               className="bg-black text-white hover:bg-gray-800 min-w-[100px] border-0"
             >
@@ -655,7 +665,9 @@ export default function UserManagement() {
               <label className="block text-sm font-medium text-gray-500 mb-1">
                 Created At
               </label>
-              <p className="text-gray-900">{formatDate(selectedUser.createdAt)}</p>
+              <p className="text-gray-900">
+                {formatDate(selectedUser.createdAt)}
+              </p>
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
@@ -683,4 +695,3 @@ export default function UserManagement() {
     </div>
   );
 }
- 

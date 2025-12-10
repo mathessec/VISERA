@@ -28,7 +28,7 @@ public class BinController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
     @GetMapping("/rack/{rackId}")
-    public ResponseEntity<List<Bin>> getByRack(@PathVariable int rackId) {
+    public ResponseEntity<List<Bin>> getByRack(@PathVariable Long rackId) {
         return ResponseEntity.ok(binService.getBinsByRack(rackId));
     }
 }
