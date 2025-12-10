@@ -13,3 +13,4 @@ public class ZoneStatisticsDTO {
     private double occupancyPercentage;
 }
 
+
