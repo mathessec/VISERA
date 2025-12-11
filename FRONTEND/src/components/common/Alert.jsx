@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle, Info, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Info, XCircle, X } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 
 const variants = {
@@ -28,7 +28,7 @@ const variants = {
   },
 };
 
-export default function Alert({ variant = 'info', children, className }) {
+export default function Alert({ variant = 'info', children, className, onClose }) {
   const config = variants[variant];
   const Icon = config.icon;
 
@@ -44,6 +44,14 @@ export default function Alert({ variant = 'info', children, className }) {
     >
       <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
       <div className="flex-1">{children}</div>
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="flex-shrink-0 text-current opacity-70 hover:opacity-100 transition-opacity"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 }

@@ -1,9 +1,10 @@
 package com.visera.backend.Entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "products")
@@ -19,14 +20,22 @@ public class Product {
 
     private String name;
     private String description;
+
     @NotBlank(message = "Category must not be blank")
     private String category;
+
+    // Product lifecycle / catalog status (e.g. ACTIVE, INACTIVE, LOW_STOCK)
+    private String status;
+
     private String imageUrl;
     private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.status == null) {
+            this.status = "Active";
+        }
     }
 }
 

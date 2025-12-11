@@ -1,7 +1,10 @@
 package com.visera.backend.Controller;
 
 import com.visera.backend.DTOs.SkuDTO;
+import com.visera.backend.DTOs.SkuRequest;
+import com.visera.backend.Entity.Product;
 import com.visera.backend.Entity.Sku;
+import com.visera.backend.Repository.ProductRepository;
 import com.visera.backend.Service.SkuService;
 import com.visera.backend.mapper.EntityMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,9 @@ public class SkuController {
 
     @Autowired
     EntityMapper mapper;
+    
+    @Autowired
+    ProductRepository productRepository;
 
     private final SkuService skuService;
 
@@ -27,8 +33,23 @@ public class SkuController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
     @PostMapping("/create")
-    public ResponseEntity<Sku> create(@RequestBody Sku sku) {
-        return ResponseEntity.ok(skuService.createSku(sku));
+    public ResponseEntity<?> create(@RequestBody SkuRequest request) {
+        // Find the product
+        Product product = productRepository.findById(request.getProductId())
+                .orElseThrow(() -> new RuntimeException("Product not found with id: " + request.getProductId()));
+        
+        // Create SKU entity with variant fields
+        Sku sku = Sku.builder()
+                .product(product)
+                .skuCode(request.getSkuCode())
+                .color(request.getColor())
+                .dimensions(request.getDimensions())
+                .weight(request.getWeight())
+                .build();
+        
+        // Create SKU and optionally create inventory stock entry
+        Sku createdSku = skuService.createSkuWithInventory(sku, request.getBinId(), request.getInitialQuantity());
+        return ResponseEntity.ok(createdSku);
     }
 
 //    @GetMapping("/getallsku")
@@ -44,14 +65,27 @@ public class SkuController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPERVISOR')")
-    @PutMapping("/{id}")
-    public ResponseEntity<Sku> update(@PathVariable int id, @RequestBody Sku updated) {
-        Sku sku = skuService.updateSku(id, updated);
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Sku> update(@PathVariable int id, @RequestBody SkuRequest request) {
+        // Find the product
+        Product product = productRepository.findById(request.getProductId())
+                .orElseThrow(() -> new RuntimeException("Product not found with id: " + request.getProductId()));
+        
+        // Create SKU entity with updated fields
+        Sku updatedSku = Sku.builder()
+                .product(product)
+                .skuCode(request.getSkuCode())
+                .color(request.getColor())
+                .dimensions(request.getDimensions())
+                .weight(request.getWeight())
+                .build();
+        
+        Sku sku = skuService.updateSku(id, updatedSku);
         return (sku != null) ? ResponseEntity.ok(sku) : ResponseEntity.notFound().build();
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> delete(@PathVariable int id) {
         skuService.deleteSku(id);
         return ResponseEntity.noContent().build();
@@ -61,11 +95,7 @@ public class SkuController {
     @PreAuthorize("hasAnyRole('ADMIN','SUPERVISOR','WORKER')")
     @GetMapping("/getallskudto")
     public ResponseEntity<List<SkuDTO>> getAllSkus() {
-        return ResponseEntity.ok(
-                skuService.getAllSkus().stream()
-                        .map(mapper::toSkuDTO)
-                        .collect(java.util.stream.Collectors.toList())
-        );
+        return ResponseEntity.ok(skuService.getAllSkusWithInventory());
     }
 }
 

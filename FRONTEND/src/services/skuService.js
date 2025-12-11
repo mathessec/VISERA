@@ -19,3 +19,8 @@ export const updateSku = async (id, skuData) => {
   const response = await api.put(`/api/skus/${id}`, skuData);
   return response.data;
 };
+
+export const deleteSku = async (id) => {
+  const response = await api.delete(`/api/skus/delete/${id}`);
+  return response.data;
+};

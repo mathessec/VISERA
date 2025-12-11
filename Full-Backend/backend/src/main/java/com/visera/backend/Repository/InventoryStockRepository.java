@@ -1,11 +1,12 @@
 package com.visera.backend.Repository;
-import com.visera.backend.Entity.Bin;
-import com.visera.backend.Entity.InventoryStock;
-import com.visera.backend.Entity.Sku;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.visera.backend.Entity.InventoryStock;
 
 public interface InventoryStockRepository extends JpaRepository<InventoryStock, Long> {
 
@@ -13,7 +14,13 @@ public interface InventoryStockRepository extends JpaRepository<InventoryStock, 
 
     List<InventoryStock> findByBinId(Long binId);
 
-    Optional<InventoryStock> findBySkuIdAndBinId(Sku skuId, Bin binId);
+    Optional<InventoryStock> findBySkuIdAndBinId(Long skuId, Long binId);
     
     long countByBinIdInAndQuantityGreaterThan(List<Long> binIds, int quantity);
+    
+    @Query("SELECT COALESCE(SUM(is.quantity), 0) FROM InventoryStock is WHERE is.sku.id = :skuId")
+    int getTotalQuantityBySkuId(@Param("skuId") Long skuId);
+    
+    @Query("SELECT is.bin.code FROM InventoryStock is WHERE is.sku.id = :skuId AND is.quantity > 0 ORDER BY is.quantity DESC")
+    List<String> getBinLocationsBySkuId(@Param("skuId") Long skuId);
 }

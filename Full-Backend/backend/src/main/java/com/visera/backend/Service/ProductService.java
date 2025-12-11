@@ -6,11 +6,12 @@ import java.util.List;
 
 public interface ProductService {
     Product createProduct(Product product);
-    Product getProductById(int id);
+    Product getProductById(Long id);
     List<Product> getAllProducts();
 
     // New methods to support update and delete operations
-    Product updateProduct(int id, Product product);
-    void deleteProduct(int id);
+    Product updateProduct(Long id, Product product);
+    void deleteProduct(Long id);
+    long getSkuCountByProductId(Long productId);
 }
 

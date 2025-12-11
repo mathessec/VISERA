@@ -22,5 +22,6 @@ public class Rack {
     private Zone zone;
 
     private String name;
+    private String description;
 }
 

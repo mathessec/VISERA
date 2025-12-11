@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Package, FileText, Users, Warehouse, 
   BarChart3, ShoppingCart, 
-  ClipboardList, AlertCircle, TrendingUp, MapPin, Boxes, CheckSquare, Monitor, PackageSearch, ScanEye
+  ClipboardList, AlertCircle, TrendingUp, MapPin, Boxes, CheckSquare, Monitor, PackageSearch, ScanEye, Package2
 } from 'lucide-react';
 import { logout, getRole } from '../../services/authService';
 import { cn } from '../../utils/helpers';
@@ -12,6 +12,7 @@ const menuByRole = {
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
     { name: 'Products', icon: Package, path: '/products' },
     { name: 'SKUs', icon: Boxes, path: '/skus' },
+    { name: 'Inventory', icon: Package2, path: '/inventory/stock' },
     { name: 'Shipments', icon: ShoppingCart, path: '/shipments' },
     { name: 'Users', icon: Users, path: '/users' },
     { name: 'Warehouse Layout', icon: Warehouse, path: '/warehouse/zones' },

@@ -1,7 +1,10 @@
 package com.visera.backend.Controller;
 
+import com.visera.backend.DTOs.RackCreateDTO;
+import com.visera.backend.DTOs.RackWithBinsDTO;
 import com.visera.backend.Entity.Rack;
 import com.visera.backend.Service.RackService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -21,13 +24,19 @@ public class RackController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
     @PostMapping("/create")
-    public ResponseEntity<Rack> create(@RequestBody Rack rack) {
-        return ResponseEntity.ok(rackService.createRack(rack));
+    public ResponseEntity<Rack> create(@Valid @RequestBody RackCreateDTO rackCreateDTO) {
+        return ResponseEntity.ok(rackService.createRack(rackCreateDTO));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
     @GetMapping("/zone/{zoneId}")
     public ResponseEntity<List<Rack>> getByZone(@PathVariable Long zoneId) {
         return ResponseEntity.ok(rackService.getRacksByZone(zoneId));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
+    @GetMapping("/zone/{zoneId}/with-bins")
+    public ResponseEntity<List<RackWithBinsDTO>> getRacksWithBinsByZone(@PathVariable Long zoneId) {
+        return ResponseEntity.ok(rackService.getRacksWithBinsByZone(zoneId));
     }
 }

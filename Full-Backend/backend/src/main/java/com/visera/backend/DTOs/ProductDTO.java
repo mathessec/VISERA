@@ -1,6 +1,7 @@
 package com.visera.backend.DTOs;
 
 import lombok.Data;
+import java.time.LocalDateTime;
 
 @Data
 public class ProductDTO {
@@ -8,6 +9,8 @@ public class ProductDTO {
     private String name;
     private String description;
     private String category;
-    private String imageUrl;
+    private String status;
+    private long totalSkus;
+    private LocalDateTime createdAt;
 }
 

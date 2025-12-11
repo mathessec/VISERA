@@ -23,6 +23,7 @@ public class Bin {
     @NotFound(action = NotFoundAction.IGNORE)
     private Rack rack;
 
-    private String code;
-    private Integer capacity;
+    private String name;      // Display name (e.g., "Bin A1")
+    private String code;      // Unique identifier (e.g., "Z1-R2-B5")
+    private Integer capacity; // Max quantity
 }

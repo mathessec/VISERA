@@ -29,6 +29,7 @@ import WorkerDashboard from "../pages/worker/WorkerDashboard";
 
 // Shared pages
 import InventoryStock from "../pages/inventory/InventoryStock";
+import InventoryManagement from "../pages/inventory/InventoryManagement";
 import Notifications from "../pages/notifications/Notifications";
 import ProductCreate from "../pages/products/ProductCreate";
 import ProductDetail from "../pages/products/ProductDetail";
@@ -38,6 +39,8 @@ import ShipmentCreate from "../pages/shipments/ShipmentCreate";
 import ShipmentDetail from "../pages/shipments/ShipmentDetail";
 import ShipmentList from "../pages/shipments/ShipmentList";
 import SkuCreate from "../pages/skus/SkuCreate";
+import SkuDetail from "../pages/skus/SkuDetail";
+import SkuEdit from "../pages/skus/SkuEdit";
 import SkuList from "../pages/skus/SkuList";
 import TaskList from "../pages/tasks/TaskList";
 import UserManagement from "../pages/users/UserManagement";
@@ -277,6 +280,26 @@ export default function AppRoutes() {
           }
         />
         <Route
+          path="/skus/:id/edit"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN", "SUPERVISOR", "WORKER"]}>
+              <Layout>
+                <SkuEdit />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/skus/:id"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN", "SUPERVISOR", "WORKER"]}>
+              <Layout>
+                <SkuDetail />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/shipments"
           element={
             <ProtectedRoute allowedRoles={["ADMIN", "SUPERVISOR", "WORKER"]}>
@@ -338,6 +361,16 @@ export default function AppRoutes() {
         />
         <Route
           path="/inventory/stock"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN", "SUPERVISOR", "WORKER"]}>
+              <Layout>
+                <InventoryManagement />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inventory/search"
           element={
             <ProtectedRoute allowedRoles={["ADMIN", "SUPERVISOR", "WORKER"]}>
               <Layout>

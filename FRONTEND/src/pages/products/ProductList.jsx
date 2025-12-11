@@ -1,22 +1,25 @@
-import { Plus, Search, Filter } from "lucide-react";
+import { Filter, Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Card, { CardHeader, CardTitle, CardContent } from "../../components/common/Card";
+import Alert from "../../components/common/Alert";
 import Button from "../../components/common/Button";
+import Card, { CardContent, CardHeader } from "../../components/common/Card";
 import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
+import Modal from "../../components/common/Modal";
 import { DataTable, getStatusBadge } from "../../components/shared/DataTable";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../components/common/Dialog";
-import { Label } from "../../components/common/Label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/common/Select";
-import api from "../../services/api";
+import { deleteProduct, getAllProducts } from "../../services/productService";
 
 export default function ProductList() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     fetchProducts();
@@ -24,32 +27,58 @@ export default function ProductList() {
 
   const fetchProducts = async () => {
     try {
-      const response = await api.get("/api/products/getallproducts");
-      setProducts(response.data);
+      setLoading(true);
+      const data = await getAllProducts();
+      setProducts(data);
+      setError("");
     } catch (error) {
       console.error("Error fetching products:", error);
+      setError("Failed to load products");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDeleteClick = (product) => {
+    setProductToDelete(product);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!productToDelete) return;
+
+    try {
+      setDeleting(true);
+      await deleteProduct(productToDelete.id);
+      setSuccess(`Product "${productToDelete.name}" deleted successfully`);
+      setDeleteModalOpen(false);
+      setProductToDelete(null);
+      fetchProducts(); // Refresh the list
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete product");
+      setDeleteModalOpen(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const columns = [
-    { key: 'id', label: 'Product ID' },
-    { key: 'name', label: 'Name' },
-    { key: 'category', label: 'Category' },
-    { key: 'brand', label: 'Brand' },
-    { 
-      key: 'status', 
-      label: 'Status',
-      render: (value) => getStatusBadge(value || 'Active')
+    { key: "id", label: "Product ID" },
+    { key: "name", label: "Name" },
+    { key: "category", label: "Category" },
+    {
+      key: "status",
+      label: "Status",
+      render: (value) => getStatusBadge(value || "Active"),
     },
-    { key: 'totalSkus', label: 'Total SKUs' },
+    { key: "totalSkus", label: "Total SKUs" },
   ];
 
   const filteredProducts = products.filter(
     (product) =>
       product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.id?.toString().includes(searchTerm) ||
       product.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -59,62 +88,28 @@ export default function ProductList() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-gray-900 mb-2">Product Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Product Management
+          </h1>
           <p className="text-gray-500">Manage your product catalog</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Product
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Product</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="productName">Product Name</Label>
-                <Input id="productName" placeholder="Enter product name" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="electronics">Electronics</SelectItem>
-                    <SelectItem value="accessories">Accessories</SelectItem>
-                    <SelectItem value="office">Office</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="brand">Brand</Label>
-                <Input id="brand" placeholder="Enter brand name" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-2 pt-4">
-                <Button className="flex-1" onClick={() => setIsDialogOpen(false)}>Create Product</Button>
-                <Button variant="outline" className="flex-1" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button variant="primary" onClick={() => navigate("/products/create")}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Product
+        </Button>
       </div>
+
+      {error && (
+        <Alert variant="error" onClose={() => setError("")}>
+          {error}
+        </Alert>
+      )}
+
+      {success && (
+        <Alert variant="success" onClose={() => setSuccess("")}>
+          {success}
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>
@@ -128,7 +123,7 @@ export default function ProductList() {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline">
+            <Button variant="outline" disabled>
               <Filter className="w-4 h-4 mr-2" />
               Filter
             </Button>
@@ -139,11 +134,51 @@ export default function ProductList() {
             columns={columns}
             data={filteredProducts}
             onEdit={(row) => navigate(`/products/${row.id}/edit`)}
-            onDelete={(row) => console.log('Delete', row)}
+            onDelete={handleDeleteClick}
             onView={(row) => navigate(`/products/${row.id}`)}
           />
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          if (!deleting) {
+            setDeleteModalOpen(false);
+            setProductToDelete(null);
+          }
+        }}
+        title="Delete Product"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600">
+            Are you sure you want to delete{" "}
+            <strong>{productToDelete?.name}</strong>? This action cannot be
+            undone.
+          </p>
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteModalOpen(false);
+                setProductToDelete(null);
+              }}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

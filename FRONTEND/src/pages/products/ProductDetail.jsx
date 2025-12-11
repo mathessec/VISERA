@@ -108,23 +108,6 @@ export default function ProductDetail() {
                   {product.description || "No description provided"}
                 </p>
               </div>
-              {product.imageUrl && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">
-                    Image
-                  </label>
-                  <div className="mt-2">
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      className="w-full max-w-md h-64 object-cover rounded-lg border border-gray-200"
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
@@ -140,7 +123,13 @@ export default function ProductDetail() {
                   Status
                 </label>
                 <div className="mt-1">
-                  <Badge variant="green">Active</Badge>
+                  <Badge variant={
+                    product.status === "Active" ? "green" : 
+                    product.status === "Low Stock" ? "red" : 
+                    "gray"
+                  }>
+                    {product.status || "Active"}
+                  </Badge>
                 </div>
               </div>
               <div>
