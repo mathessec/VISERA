@@ -6,6 +6,7 @@ com\visera\backend\Repository\TaskRepository.class
 com\visera\backend\security\CustomUserDetailsService.class
 com\visera\backend\Repository\BinRepository.class
 com\visera\backend\Repository\UserRepository.class
+com\visera\backend\Service\ShipmentWorkerServiceImpl.class
 com\visera\backend\BackendApplication.class
 com\visera\backend\DTOs\VerificationDTO.class
 com\visera\backend\DTOs\ProductDTO.class
@@ -20,15 +21,18 @@ com\visera\backend\Service\ShipmentService.class
 com\visera\backend\Controller\RackController.class
 com\visera\backend\Service\UserService.class
 com\visera\backend\Entity\Task$TaskBuilder.class
+com\visera\backend\Entity\ShipmentWorker.class
 com\visera\backend\Entity\Shipment.class
 com\visera\backend\Entity\Shipment$ShipmentBuilder.class
 com\visera\backend\Repository\ShipmentRepository.class
 com\visera\backend\Entity\Rack.class
 com\visera\backend\Entity\Rack$RackBuilder.class
 com\visera\backend\Entity\Product$ProductBuilder.class
+com\visera\backend\Service\ShipmentWorkerService.class
 com\visera\backend\Service\AuthServiceImpl.class
 com\visera\backend\Controller\ZoneController.class
 com\visera\backend\Entity\Task.class
+com\visera\backend\Entity\ShipmentWorker$ShipmentWorkerBuilder.class
 com\visera\backend\Controller\ShipmentController.class
 com\visera\backend\DTOs\NotificationDTO.class
 com\visera\backend\Repository\ZoneRepository.class
@@ -49,6 +53,7 @@ com\visera\backend\Controller\NotificationController.class
 com\visera\backend\security\JwtUtil.class
 com\visera\backend\Service\ShipmentItemServiceImpl.class
 com\visera\backend\Service\InventoryStockService.class
+com\visera\backend\Repository\ShipmentWorkerRepository.class
 com\visera\backend\Service\VerificationLogServiceImpl.class
 com\visera\backend\Repository\NotificationRepository.class
 com\visera\backend\Entity\InventoryStock$InventoryStockBuilder.class

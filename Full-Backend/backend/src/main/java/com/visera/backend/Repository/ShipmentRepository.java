@@ -5,11 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface ShipmentRepository extends JpaRepository<Shipment, Integer> {
+public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
-    List<Shipment> findByCreatedBy(int userId);
+    List<Shipment> findByCreatedBy(Long userId);
 
-    List<Shipment> findByAssignedTo(int userId);
+    List<Shipment> findByAssignedTo(Long userId);
 
     List<Shipment> findByStatus(String status);
 }

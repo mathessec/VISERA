@@ -1,4 +1,12 @@
 package com.visera.backend.Service;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.visera.backend.DTOs.SkuDTO;
 import com.visera.backend.Entity.Bin;
 import com.visera.backend.Entity.InventoryStock;
@@ -7,13 +15,6 @@ import com.visera.backend.Repository.BinRepository;
 import com.visera.backend.Repository.InventoryStockRepository;
 import com.visera.backend.Repository.SkuRepository;
 import com.visera.backend.mapper.EntityMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class SkuServiceImpl implements SkuService {

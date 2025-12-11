@@ -9,5 +9,7 @@ public class ShipmentItemDTO {
     private long skuId;
     private int quantity;
     private String status;
+    private String skuCode;
+    private String productName;
 }
 

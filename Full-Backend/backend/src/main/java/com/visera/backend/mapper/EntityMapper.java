@@ -2,10 +2,22 @@ package com.visera.backend.mapper;
 
 import com.visera.backend.DTOs.*;
 import com.visera.backend.Entity.*;
+import com.visera.backend.Repository.ShipmentItemRepository;
+import com.visera.backend.Repository.ShipmentWorkerRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class EntityMapper {
+
+    @Autowired
+    private ShipmentWorkerRepository shipmentWorkerRepository;
+
+    @Autowired
+    private ShipmentItemRepository shipmentItemRepository;
 
     public ShipmentDTO toShipmentDTO(Shipment shipment) {
         ShipmentDTO dto = new ShipmentDTO();
@@ -14,6 +26,27 @@ public class EntityMapper {
         dto.setStatus(shipment.getStatus());
         dto.setCreatedBy(shipment.getCreatedBy());
         dto.setAssignedTo(shipment.getAssignedTo());
+        dto.setDeadline(shipment.getDeadline());
+        dto.setCreatedAt(shipment.getCreatedAt());
+        
+        // Get assigned workers
+        List<ShipmentWorker> shipmentWorkers = shipmentWorkerRepository.findByShipment(shipment);
+        List<UserDTO> assignedWorkers = shipmentWorkers.stream()
+                .map(sw -> {
+                    UserDTO userDTO = new UserDTO();
+                    userDTO.setId(sw.getWorker().getId());
+                    userDTO.setName(sw.getWorker().getName());
+                    userDTO.setEmail(sw.getWorker().getEmail());
+                    userDTO.setRole(sw.getWorker().getRole());
+                    return userDTO;
+                })
+                .collect(Collectors.toList());
+        dto.setAssignedWorkers(assignedWorkers);
+        
+        // Get package count
+        int packageCount = shipmentItemRepository.findByShipmentId(shipment.getId()).size();
+        dto.setPackageCount(packageCount);
+        
         return dto;
     }
 
@@ -24,6 +57,8 @@ public class EntityMapper {
         dto.setSkuId(item.getSku().getId());
         dto.setQuantity(item.getQuantity());
         dto.setStatus(item.getStatus());
+        dto.setSkuCode(item.getSku().getSkuCode());
+        dto.setProductName(item.getSku().getProduct().getName());
         return dto;
     }
 

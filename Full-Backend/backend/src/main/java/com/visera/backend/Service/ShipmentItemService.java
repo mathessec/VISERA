@@ -4,6 +4,7 @@ import java.util.List;
 
 public interface ShipmentItemService {
     ShipmentItem createShipmentItem(ShipmentItem item);
+    List<ShipmentItem> createBatchShipmentItems(List<ShipmentItem> items);
     ShipmentItem getShipmentItemById(int id);
     List<ShipmentItem> getItemsByShipment(int shipmentId);
     ShipmentItem updateShipmentItem(int id, ShipmentItem item);

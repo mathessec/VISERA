@@ -1,17 +1,17 @@
 package com.visera.backend.Entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "shipment_items")
+@Table(name = "shipment_workers")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ShipmentItem {
+public class ShipmentWorker {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,14 +23,15 @@ public class ShipmentItem {
     private Shipment shipment;
 
     @ManyToOne
-    @JoinColumn(name = "sku_id")
-    @NotNull(message = "SKU must not be null")
-    private Sku sku;
+    @JoinColumn(name = "worker_id")
+    @NotNull(message = "Worker must not be null")
+    private User worker;
 
-    @NotNull(message = "Quantity must not be null")
-    @Min(value = 1, message = "Quantity must be at least 1")
-    private Integer quantity;
+    private LocalDateTime assignedAt;
 
-    private String status; // RECEIVED, STORED, PICKED, PACKED
+    @PrePersist
+    protected void onCreate() {
+        this.assignedAt = LocalDateTime.now();
+    }
 }
 

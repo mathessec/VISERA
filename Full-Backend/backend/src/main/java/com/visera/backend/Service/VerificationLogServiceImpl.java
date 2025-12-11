@@ -22,7 +22,7 @@ public class VerificationLogServiceImpl implements VerificationLogService {
 
     @Override
     public List<VerificationLog> getLogsByShipmentItem(int itemId) {
-        return repo.findByShipmentItemId(itemId);
+        return repo.findByShipmentItemId((long) itemId);
     }
 }
 

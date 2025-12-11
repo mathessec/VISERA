@@ -20,18 +20,23 @@ public class ShipmentItemServiceImpl implements ShipmentItemService {
     }
 
     @Override
+    public List<ShipmentItem> createBatchShipmentItems(List<ShipmentItem> items) {
+        return repo.saveAll(items);
+    }
+
+    @Override
     public ShipmentItem getShipmentItemById(int id) {
-        return repo.findById(id).orElse(null);
+        return repo.findById((long) id).orElse(null);
     }
 
     @Override
     public List<ShipmentItem> getItemsByShipment(int shipmentId) {
-        return repo.findByShipmentId(shipmentId);
+        return repo.findByShipmentId((long) shipmentId);
     }
 
     @Override
     public ShipmentItem updateShipmentItem(int id, ShipmentItem updated) {
-        return repo.findById(id).map(item -> {
+        return repo.findById((long) id).map(item -> {
             item.setSku(updated.getSku());
             item.setQuantity(updated.getQuantity());
             item.setStatus(updated.getStatus());
@@ -41,6 +46,6 @@ public class ShipmentItemServiceImpl implements ShipmentItemService {
 
     @Override
     public void deleteShipmentItem(int id) {
-        repo.deleteById(id);
+        repo.deleteById((long) id);
     }
 }

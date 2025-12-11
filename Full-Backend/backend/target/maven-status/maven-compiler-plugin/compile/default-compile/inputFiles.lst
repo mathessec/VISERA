@@ -39,6 +39,7 @@ C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backe
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\Rack.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\Shipment.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\ShipmentItem.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\ShipmentWorker.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\Sku.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\Task.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\User.java
@@ -53,6 +54,7 @@ C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backe
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Repository\RackRepository.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Repository\ShipmentItemRepository.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Repository\ShipmentRepository.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Repository\ShipmentWorkerRepository.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Repository\SkuRepository.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Repository\TaskRepository.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Repository\UserRepository.java
@@ -81,6 +83,8 @@ C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backe
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\ShipmentItemServiceImpl.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\ShipmentService.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\ShipmentServiceImpl.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\ShipmentWorkerService.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\ShipmentWorkerServiceImpl.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\SkuService.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\SkuServiceImpl.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\TaskService.java

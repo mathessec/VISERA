@@ -6,7 +6,9 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.NotFound;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "shipments")
@@ -34,7 +36,14 @@ public class Shipment {
     @JoinColumn(name = "assigned_to")
     private User assignedTo;
 
+    @NotNull(message = "Deadline must not be null")
+    private LocalDate deadline;
+
     private LocalDateTime createdAt;
+
+    // Bi-directional relationship to enable cascade delete
+    @OneToMany(mappedBy = "shipment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ShipmentWorker> shipmentWorkers;
 
     @PrePersist
     protected void onCreate() {

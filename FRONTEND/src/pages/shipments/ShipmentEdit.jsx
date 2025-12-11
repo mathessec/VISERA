@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
@@ -9,15 +9,16 @@ import MultiSelect from '../../components/common/MultiSelect';
 import PackageInputRow from '../../components/shipments/PackageInputRow';
 import Alert from '../../components/common/Alert';
 import Loading from '../../components/common/Loading';
-import { createShipment, assignWorkers } from '../../services/shipmentService';
-import { createBatchItems } from '../../services/shipmentItemService';
+import { getShipmentById, updateShipment, assignWorkers, getAssignedWorkers, removeWorker } from '../../services/shipmentService';
+import { getItemsByShipment, createBatchItems, deleteShipmentItem } from '../../services/shipmentItemService';
 import { getAllUsers } from '../../services/userService';
 import { getAllSkus } from '../../services/skuService';
-import { getUserId } from '../../services/authService';
 
-export default function ShipmentCreate() {
+export default function ShipmentEdit() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [workers, setWorkers] = useState([]);
   const [skus, setSkus] = useState([]);
@@ -31,22 +32,64 @@ export default function ShipmentCreate() {
   const [packages, setPackages] = useState([
     { skuId: '', quantity: '' },
   ]);
+  const [existingPackages, setExistingPackages] = useState([]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [id]);
 
   const fetchData = async () => {
     try {
-      const [usersData, skusData] = await Promise.all([
+      setLoading(true);
+      const [shipmentData, packagesData, workersData, skusData, assignedWorkersData] = await Promise.all([
+        getShipmentById(id),
+        getItemsByShipment(id),
         getAllUsers(),
         getAllSkus(),
+        getAssignedWorkers(id),
       ]);
-      setWorkers(usersData.filter((u) => u.role === 'WORKER'));
+
+      console.log('Shipment Data:', shipmentData);
+      console.log('Packages Data:', packagesData);
+      console.log('Assigned Workers Data:', assignedWorkersData);
+
+      // Set workers and SKUs first
+      setWorkers(workersData.filter((u) => u.role === 'WORKER'));
       setSkus(skusData);
+
+      // Populate form with shipment data
+      // Ensure worker IDs are in the same type as the options (numbers)
+      const selectedWorkerIds = assignedWorkersData.map((w) => Number(w.id));
+      
+      setFormData({
+        shipmentType: shipmentData.shipmentType || 'INBOUND',
+        status: shipmentData.status || 'CREATED',
+        deadline: shipmentData.deadline ? (typeof shipmentData.deadline === 'string' ? shipmentData.deadline.split('T')[0] : shipmentData.deadline) : '',
+        selectedWorkers: selectedWorkerIds,
+      });
+
+      // Set packages
+      if (packagesData && packagesData.length > 0) {
+        setExistingPackages(packagesData);
+        const formattedPackages = packagesData.map((pkg) => ({
+          id: pkg.id,
+          skuId: pkg.skuId ? String(pkg.skuId) : '',
+          quantity: pkg.quantity ? String(pkg.quantity) : '',
+        }));
+        console.log('Formatted Packages:', formattedPackages);
+        setPackages(formattedPackages);
+        setPackageCount(packagesData.length);
+      } else {
+        // If no packages, ensure we have at least one empty row
+        setPackages([{ skuId: '', quantity: '' }]);
+        setPackageCount(1);
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
-      setError('Failed to load workers or SKUs');
+      console.error('Error details:', err.response?.data);
+      setError('Failed to load shipment data: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,7 +101,7 @@ export default function ShipmentCreate() {
   const handlePackageCountChange = (e) => {
     const count = parseInt(e.target.value) || 1;
     setPackageCount(Math.max(1, count));
-    
+
     // Adjust packages array
     const newPackages = [...packages];
     while (newPackages.length < count) {
@@ -104,79 +147,120 @@ export default function ShipmentCreate() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (!validateForm()) {
       return;
     }
 
-    setLoading(true);
+    setSaving(true);
 
     try {
-      const userId = getUserId();
-      if (!userId) {
-        setError('User ID not found. Please log in again.');
-        setLoading(false);
-        return;
-      }
-
-      // 1. Create shipment
+      // 1. Update shipment
       const shipmentPayload = {
         shipmentType: formData.shipmentType,
         status: formData.status,
         deadline: formData.deadline,
-        createdBy: { id: parseInt(userId) },
       };
-      
-      const shipment = await createShipment(shipmentPayload);
 
-      // 2. Assign workers if any selected
-      if (formData.selectedWorkers.length > 0) {
-        await assignWorkers(shipment.id, formData.selectedWorkers);
+      await updateShipment(id, shipmentPayload);
+
+      // 2. Update workers
+      // Get current workers and determine which to remove/add
+      const currentWorkers = await getAssignedWorkers(id);
+      const currentWorkerIds = currentWorkers.map((w) => w.id);
+      const newWorkerIds = formData.selectedWorkers;
+
+      // Remove workers that are no longer selected
+      const workersToRemove = currentWorkerIds.filter(
+        (id) => !newWorkerIds.includes(id)
+      );
+      for (const workerId of workersToRemove) {
+        await removeWorker(id, workerId);
       }
 
-      // 3. Create shipment items (packages)
-      const shipmentItems = packages.map((pkg) => ({
-        shipment: { id: shipment.id },
+      // Add new workers (assignWorkers handles duplicates)
+      const workersToAdd = newWorkerIds.filter(
+        (id) => !currentWorkerIds.includes(id)
+      );
+      if (workersToAdd.length > 0) {
+        await assignWorkers(id, workersToAdd);
+      }
+
+      // 3. Update packages
+      // Delete existing packages that are not in the new list
+      const existingPackageIds = existingPackages.map((p) => p.id);
+      const newPackageIds = packages.filter((p) => p.id).map((p) => p.id);
+      const packagesToDelete = existingPackageIds.filter((id) => !newPackageIds.includes(id));
+
+      for (const packageId of packagesToDelete) {
+        await deleteShipmentItem(packageId);
+      }
+
+      // Create/update packages
+      const packagesToCreate = packages.filter((pkg) => !pkg.id);
+      const packagesToUpdate = packages.filter((pkg) => pkg.id);
+
+      // For simplicity, we'll delete and recreate updated packages
+      // In a production app, you'd want an update endpoint
+      for (const pkg of packagesToUpdate) {
+        await deleteShipmentItem(pkg.id);
+      }
+
+      // Create all packages (new + updated)
+      const allPackagesToCreate = packages.map((pkg) => ({
+        shipment: { id: parseInt(id) },
         sku: { id: parseInt(pkg.skuId) },
         quantity: parseInt(pkg.quantity),
         status: 'CREATED',
       }));
 
-      await createBatchItems(shipmentItems);
+      if (allPackagesToCreate.length > 0) {
+        await createBatchItems(allPackagesToCreate);
+      }
 
-      navigate(`/shipments/${shipment.id}`);
+      navigate(`/shipments/${id}`);
     } catch (err) {
-      console.error('Error creating shipment:', err);
+      console.error('Error updating shipment:', err);
       const errorMessage =
         err.response?.data?.message ||
         err.response?.data?.error ||
         err.message ||
-        'Failed to create shipment';
+        'Failed to update shipment';
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   const workerOptions = workers.map((worker) => ({
-    value: worker.id,
+    value: Number(worker.id),
     label: worker.name,
   }));
 
-  if (loading) return <Loading text="Creating shipment..." />;
+  // Debug logging
+  useEffect(() => {
+    if (!loading) {
+      console.log('=== DEBUG INFO ===');
+      console.log('Workers:', workers);
+      console.log('Worker Options:', workerOptions);
+      console.log('Selected Workers in formData:', formData.selectedWorkers);
+      console.log('SKUs:', skus);
+      console.log('Packages:', packages);
+    }
+  }, [loading, workers, formData.selectedWorkers, skus, packages]);
+
+  if (loading) return <Loading text="Loading shipment..." />;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="outline" onClick={() => navigate('/shipments')}>
+        <Button variant="outline" onClick={() => navigate(`/shipments/${id}`)}>
           <ArrowLeft size={20} className="mr-2" />
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Create Shipment</h1>
-          <p className="text-gray-600 mt-1">
-            Create a new inbound or outbound shipment
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Edit Shipment SH-{id}</h1>
+          <p className="text-gray-600 mt-1">Update shipment details</p>
         </div>
       </div>
 
@@ -198,7 +282,7 @@ export default function ShipmentCreate() {
             />
 
             <Select
-              label="Initial Status"
+              label="Status"
               name="status"
               value={formData.status}
               onChange={handleChange}
@@ -206,6 +290,8 @@ export default function ShipmentCreate() {
               options={[
                 { value: 'CREATED', label: 'Created' },
                 { value: 'ARRIVED', label: 'Arrived' },
+                { value: 'PUTAWAY', label: 'Putaway' },
+                { value: 'COMPLETED', label: 'Completed' },
               ]}
             />
           </div>
@@ -251,7 +337,7 @@ export default function ShipmentCreate() {
             </h3>
             {packages.map((pkg, index) => (
               <PackageInputRow
-                key={index}
+                key={pkg.id || index}
                 packageNumber={index + 1}
                 skuOptions={skus}
                 selectedSku={pkg.skuId}
@@ -279,13 +365,13 @@ export default function ShipmentCreate() {
           </div>
 
           <div className="flex gap-4 pt-4">
-            <Button type="submit" variant="primary" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Shipment'}
+            <Button type="submit" variant="primary" disabled={saving}>
+              {saving ? 'Saving...' : 'Update Shipment'}
             </Button>
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/shipments')}
+              onClick={() => navigate(`/shipments/${id}`)}
             >
               Cancel
             </Button>
@@ -295,3 +381,4 @@ export default function ShipmentCreate() {
     </div>
   );
 }
+

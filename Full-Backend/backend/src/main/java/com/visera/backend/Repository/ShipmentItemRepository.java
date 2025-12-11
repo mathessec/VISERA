@@ -5,9 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface ShipmentItemRepository extends JpaRepository<ShipmentItem, Integer> {
+public interface ShipmentItemRepository extends JpaRepository<ShipmentItem, Long> {
 
-    List<ShipmentItem> findByShipmentId(int shipmentId);
+    List<ShipmentItem> findByShipmentId(Long shipmentId);
 
     List<ShipmentItem> findByStatus(String status);
 }

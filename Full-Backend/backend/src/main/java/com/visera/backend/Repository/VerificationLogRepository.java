@@ -5,10 +5,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface VerificationLogRepository extends JpaRepository<VerificationLog, Integer> {
+public interface VerificationLogRepository extends JpaRepository<VerificationLog, Long> {
 
-    List<VerificationLog> findByShipmentItemId(int shipmentItemId);
+    List<VerificationLog> findByShipmentItemId(Long shipmentItemId);
 
-    List<VerificationLog> findByVerifiedBy(int userId);
+    List<VerificationLog> findByVerifiedBy(Long userId);
 }
 

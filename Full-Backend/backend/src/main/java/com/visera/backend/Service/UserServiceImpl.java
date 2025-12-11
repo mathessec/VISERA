@@ -32,7 +32,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserById(int id) {
-        return repo.findById(id).orElse(null);
+        return repo.findById((long) id).orElse(null);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User updateUser(int id, User updatedUser) {
-        return repo.findById(id).map(user -> {
+        return repo.findById((long) id).map(user -> {
             user.setName(updatedUser.getName());
             user.setEmail(updatedUser.getEmail());
 
@@ -61,6 +61,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(int id) {
-        repo.deleteById(id);
+        repo.deleteById((long) id);
     }
 }

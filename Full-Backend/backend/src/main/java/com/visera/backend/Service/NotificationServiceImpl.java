@@ -22,12 +22,12 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public List<Notification> getNotificationsByUser(int userId) {
-        return repo.findByUserId(userId);
+        return repo.findByUserId((long) userId);
     }
 
     @Override
     public void markAsRead(int id) {
-        repo.findById(id).ifPresent(n -> {
+        repo.findById((long) id).ifPresent(n -> {
             n.setRead(true);
             repo.save(n);
         });

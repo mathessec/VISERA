@@ -69,5 +69,11 @@ public class ShipmentItemController {
         );
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @PostMapping("/batch")
+    public ResponseEntity<List<ShipmentItem>> createBatch(@RequestBody List<ShipmentItem> items) {
+        return ResponseEntity.ok(shipmentItemService.createBatchShipmentItems(items));
+    }
+
 }
 

@@ -1,8 +1,10 @@
 package com.visera.backend.Controller;
 
 import com.visera.backend.DTOs.ShipmentDTO;
+import com.visera.backend.DTOs.UserDTO;
 import com.visera.backend.Entity.Shipment;
 import com.visera.backend.Service.ShipmentService;
+import com.visera.backend.Service.ShipmentWorkerService;
 import com.visera.backend.mapper.EntityMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,9 +21,11 @@ public class ShipmentController {
     @Autowired
     EntityMapper mapper;
     private final ShipmentService shipmentService;
+    private final ShipmentWorkerService shipmentWorkerService;
 
-    public ShipmentController(ShipmentService shipmentService) {
+    public ShipmentController(ShipmentService shipmentService, ShipmentWorkerService shipmentWorkerService) {
         this.shipmentService = shipmentService;
+        this.shipmentWorkerService = shipmentWorkerService;
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
@@ -49,7 +53,7 @@ public class ShipmentController {
         return (s != null) ? ResponseEntity.ok(s) : ResponseEntity.notFound().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable int id) {
         shipmentService.deleteShipment(id);
@@ -73,6 +77,30 @@ public class ShipmentController {
         return (s != null)
                 ? ResponseEntity.ok(mapper.toShipmentDTO(s))
                 : ResponseEntity.notFound().build();
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @PostMapping("/{id}/assign-workers")
+    public ResponseEntity<Void> assignWorkers(@PathVariable int id, @RequestBody List<Integer> workerIds) {
+        shipmentWorkerService.assignWorkers(id, workerIds);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @DeleteMapping("/{id}/workers/{workerId}")
+    public ResponseEntity<?> removeWorker(@PathVariable int id, @PathVariable int workerId) {
+        try {
+            shipmentWorkerService.removeWorker(id, workerId);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
+    @GetMapping("/{id}/workers")
+    public ResponseEntity<List<UserDTO>> getAssignedWorkers(@PathVariable int id) {
+        return ResponseEntity.ok(shipmentWorkerService.getAssignedWorkers(id));
     }
 
 }

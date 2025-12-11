@@ -21,12 +21,12 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public List<Task> getTasksByUser(int userId) {
-        return repo.findByUserId(userId);
+        return repo.findByUserId((long) userId);
     }
 
     @Override
     public Task updateTaskStatus(int id, String status) {
-        return repo.findById(id).map(task -> {
+        return repo.findById((long) id).map(task -> {
             task.setStatus(status);
             return repo.save(task);
         }).orElse(null);

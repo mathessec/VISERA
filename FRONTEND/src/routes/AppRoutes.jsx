@@ -37,6 +37,7 @@ import ProductList from "../pages/products/ProductList";
 import Settings from "../pages/settings/Settings";
 import ShipmentCreate from "../pages/shipments/ShipmentCreate";
 import ShipmentDetail from "../pages/shipments/ShipmentDetail";
+import ShipmentEdit from "../pages/shipments/ShipmentEdit";
 import ShipmentList from "../pages/shipments/ShipmentList";
 import SkuCreate from "../pages/skus/SkuCreate";
 import SkuDetail from "../pages/skus/SkuDetail";
@@ -315,6 +316,16 @@ export default function AppRoutes() {
             <ProtectedRoute allowedRoles={["ADMIN", "SUPERVISOR", "WORKER"]}>
               <Layout>
                 <ShipmentCreate />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shipments/:id/edit"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN", "SUPERVISOR"]}>
+              <Layout>
+                <ShipmentEdit />
               </Layout>
             </ProtectedRoute>
           }
