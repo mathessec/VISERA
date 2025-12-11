@@ -29,14 +29,26 @@ export default function ShipmentCreate() {
     setLoading(true);
 
     try {
+      const userId = getUserId();
+      if (!userId) {
+        setError('User ID not found. Please log in again.');
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         ...formData,
-        createdBy: { id: parseInt(getUserId()) },
+        createdBy: { id: parseInt(userId) },
       };
       const result = await createShipment(payload);
       navigate(`/shipments/${result.id}`);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create shipment');
+      console.error('Error creating shipment:', err);
+      const errorMessage = err.response?.data?.message 
+        || err.response?.data?.error 
+        || err.message 
+        || 'Failed to create shipment';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

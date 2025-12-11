@@ -8,7 +8,11 @@ public class SkuDTO {
     private String skuCode;
     private String color;
     private String dimensions;
-    private double weight;
+    private Double weight;  // Changed to wrapper class to handle null values
     private long productId;
+    private String productName;  // NEW: Product name
+    private int totalQuantity;   // NEW: Sum of all inventory stock quantities
+    private String binLocation;  // NEW: Primary bin location code
+    private String status;       // NEW: "In Stock" or "Low Stock"
 }
 

@@ -10,7 +10,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/shipments")
@@ -62,8 +61,7 @@ public class ShipmentController {
     public ResponseEntity<List<ShipmentDTO>> getAllShipments() {
         return ResponseEntity.ok(
                 shipmentService.getAllShipments().stream()
-                        .map(mapper::toShipmentDTO).collect(java.util.stream.Collectors.toList())
-
+                        .map(mapper::toShipmentDTO).toList()
         );
     }
 
@@ -75,20 +73,6 @@ public class ShipmentController {
         return (s != null)
                 ? ResponseEntity.ok(mapper.toShipmentDTO(s))
                 : ResponseEntity.notFound().build();
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
-    @PatchMapping("/{id}/assign")
-    public ResponseEntity<Shipment> assignShipment(
-            @PathVariable int id,
-            @RequestBody Map<String, Integer> body
-    ) {
-        Integer userId = body.get("userId");
-        if (userId == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        Shipment s = shipmentService.assignShipment(id, userId);
-        return (s != null) ? ResponseEntity.ok(s) : ResponseEntity.notFound().build();
     }
 
 }

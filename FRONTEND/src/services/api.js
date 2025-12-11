@@ -1,11 +1,11 @@
-import axios from 'axios';
-import { env } from '../config/env';
+import axios from "axios";
+import { env } from "../config/env";
 
 const api = axios.create({
   baseURL: env.API_BASE_URL,
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -29,8 +29,8 @@ api.interceptors.response.use(
       localStorage.removeItem(env.TOKEN_KEY);
       localStorage.removeItem(env.ROLE_KEY);
       localStorage.removeItem(env.USER_ID_KEY);
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
       }
     }
     return Promise.reject(error);
@@ -38,5 +38,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-
-

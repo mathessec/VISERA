@@ -33,7 +33,7 @@ export default function Bins() {
   const [formData, setFormData] = useState({
     rackId: "",
     name: "",
-    description: "",
+    capacity: 100,
   });
   const [submitting, setSubmitting] = useState(false);
   const role = getRole();
@@ -107,7 +107,7 @@ export default function Bins() {
         rackId: parseInt(formData.rackId),
       });
       setIsModalOpen(false);
-      setFormData({ rackId: selectedRack, name: "", description: "" });
+      setFormData({ rackId: selectedRack, name: "", capacity: 100 });
       fetchBins();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to create bin");
@@ -178,7 +178,8 @@ export default function Bins() {
                   <TableRow>
                     <TableHead>Bin ID</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Capacity</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -187,7 +188,8 @@ export default function Bins() {
                     <TableRow key={bin.id}>
                       <TableCell className="font-medium">#{bin.id}</TableCell>
                       <TableCell>{bin.name}</TableCell>
-                      <TableCell>{bin.description || "-"}</TableCell>
+                      <TableCell className="font-mono text-sm">{bin.code || "-"}</TableCell>
+                      <TableCell>{bin.capacity || "-"}</TableCell>
                       <TableCell>
                         <Badge variant="green">Active</Badge>
                       </TableCell>
@@ -231,23 +233,18 @@ export default function Bins() {
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
-            placeholder="e.g., Bin 1, Bin 2"
+            placeholder="e.g., Bin A1, Bin B2"
           />
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Bin description"
-            />
-          </div>
+          <Input
+            label="Capacity"
+            name="capacity"
+            type="number"
+            min="1"
+            value={formData.capacity}
+            onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
+            required
+            placeholder="Maximum quantity"
+          />
           <div className="flex gap-4">
             <Button type="submit" variant="primary" disabled={submitting}>
               {submitting ? "Creating..." : "Create Bin"}
