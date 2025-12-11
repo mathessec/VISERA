@@ -77,13 +77,20 @@ export default function MultiSelect({
                   className="flex items-center gap-1 pr-1"
                 >
                   <span className="text-xs">{option.label}</span>
-                  <button
-                    type="button"
+                  <span
                     onClick={(e) => handleRemove(option.value, e)}
-                    className="hover:bg-gray-200 rounded-full p-0.5"
+                    className="hover:bg-gray-200 rounded-full p-0.5 cursor-pointer inline-flex items-center"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleRemove(option.value, e);
+                      }
+                    }}
                   >
                     <X size={12} />
-                  </button>
+                  </span>
                 </Badge>
               ))
             ) : (
@@ -153,4 +160,5 @@ export default function MultiSelect({
     </div>
   );
 }
+
 

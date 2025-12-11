@@ -12,3 +12,4 @@ public class RackWithBinsDTO {
     private Long binCount;
 }
 
+

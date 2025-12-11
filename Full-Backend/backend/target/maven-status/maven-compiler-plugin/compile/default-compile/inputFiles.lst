@@ -1,6 +1,8 @@
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\BackendApplication.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Controller\ApprovalController.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Controller\AuthController.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Controller\BinController.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Controller\InboundVerificationController.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Controller\InventoryStockController.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Controller\NotificationController.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Controller\ProductController.java
@@ -12,6 +14,7 @@ C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backe
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Controller\UserController.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Controller\VerificationLogController.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Controller\ZoneController.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\ApprovalDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\BinCreateDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\BinWithStatusDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\InventoryStockDTO.java
@@ -19,6 +22,7 @@ C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backe
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\LoginRequest.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\LoginResponse.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\NotificationDTO.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\OCRVerificationResult.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\ProductDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\RackCreateDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\RackWithBinsDTO.java
@@ -30,8 +34,10 @@ C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backe
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\TaskDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\UserDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\VerificationDTO.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\VerificationResponse.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\ZoneStatisticsDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\ZoneUpdateDTO.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\Approval.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\Bin.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\InventoryStock.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\Notification.java
@@ -47,6 +53,7 @@ C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backe
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\Zone.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\exception\GlobalExceptionHandler.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\mapper\EntityMapper.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Repository\ApprovalRepository.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Repository\BinRepository.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Repository\InventoryStockRepository.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Repository\NotificationRepository.java
@@ -67,14 +74,20 @@ C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backe
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\security\JwtUtil.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\security\PasswordConfig.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\security\SecurityConfig.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\ApprovalService.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\ApprovalServiceImpl.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\AuthService.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\AuthServiceImpl.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\BinService.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\BinServiceImpl.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\InboundVerificationService.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\InboundVerificationServiceImpl.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\InventoryStockService.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\InventoryStockServiceImpl.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\NotificationService.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\NotificationServiceImpl.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\OCRService.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\OCRServiceImpl.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\ProductService.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\ProductServiceImpl.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Service\RackService.java

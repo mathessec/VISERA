@@ -1,10 +1,10 @@
 package com.visera.backend.Entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "verification_logs")
@@ -25,6 +25,14 @@ public class VerificationLog {
     private String uploadedImageUrl;
     private String extractedSku;
     private String expectedSku;
+    private String extractedProductCode;
+    private String expectedProductCode;
+    private String extractedWeight;
+    private String expectedWeight;
+    private String extractedColor;
+    private String expectedColor;
+    private String extractedDimensions;
+    private String expectedDimensions;
     private Double aiConfidence;
     private String result; // MATCH / MISMATCH / LOW_CONFIDENCE
 

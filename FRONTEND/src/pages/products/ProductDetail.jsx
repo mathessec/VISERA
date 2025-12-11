@@ -88,6 +88,12 @@ export default function ProductDetail() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">
+                  Product Code
+                </label>
+                <p className="text-gray-900 font-semibold">{product.productCode}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">
                   Name
                 </label>
                 <p className="text-gray-900">{product.name}</p>

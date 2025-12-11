@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
@@ -73,10 +73,10 @@ export default function ShipmentEdit() {
         setExistingPackages(packagesData);
         const formattedPackages = packagesData.map((pkg) => ({
           id: pkg.id,
-          skuId: pkg.skuId ? String(pkg.skuId) : '',
-          quantity: pkg.quantity ? String(pkg.quantity) : '',
+          // defensive fallbacks to avoid undefined when rendering
+          skuId: pkg.skuId !== undefined && pkg.skuId !== null ? String(pkg.skuId) : '',
+          quantity: pkg.quantity !== undefined && pkg.quantity !== null ? String(pkg.quantity) : '',
         }));
-        console.log('Formatted Packages:', formattedPackages);
         setPackages(formattedPackages);
         setPackageCount(packagesData.length);
       } else {
@@ -117,6 +117,11 @@ export default function ShipmentEdit() {
     const newPackages = [...packages];
     newPackages[index] = { ...newPackages[index], [field]: value };
     setPackages(newPackages);
+  };
+
+  const handleAddPackage = () => {
+    setPackages([...packages, { skuId: '', quantity: '' }]);
+    setPackageCount(packages.length + 1);
   };
 
   const handleRemovePackage = (index) => {
@@ -332,34 +337,28 @@ export default function ShipmentEdit() {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Package Details
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Package Details
+              </h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddPackage}
+              >
+                <Plus size={16} className="mr-2" />
+                Add Package
+              </Button>
+            </div>
             {packages.map((pkg, index) => (
               <PackageInputRow
                 key={pkg.id || index}
-                packageNumber={index + 1}
-                skuOptions={skus}
-                selectedSku={pkg.skuId}
-                quantity={pkg.quantity}
-                onSkuChange={(value) =>
-                  handlePackageChange(index, 'skuId', value)
-                }
-                onQuantityChange={(value) =>
-                  handlePackageChange(index, 'quantity', value)
-                }
-                onRemove={() => handleRemovePackage(index)}
-                error={
-                  error && index === packages.length - 1
-                    ? {
-                        sku: !pkg.skuId ? 'SKU is required' : '',
-                        quantity:
-                          !pkg.quantity || parseInt(pkg.quantity) <= 0
-                            ? 'Valid quantity is required'
-                            : '',
-                      }
-                    : null
-                }
+                pkg={pkg}
+                index={index}
+                skus={skus}
+                onChange={handlePackageChange}
+                onRemove={handleRemovePackage}
               />
             ))}
           </div>

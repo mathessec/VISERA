@@ -1,17 +1,27 @@
 import * as React from "react";
 import { cn } from '../../utils/helpers';
 
-function Input({ className, type, error, label, ...props }) {
-  const inputElement = (
+function Input({ className, type, error, label, multiline, rows = 3, ...props }) {
+  const baseClassName = cn(
+    "placeholder:text-gray-400 selection:bg-primary selection:text-white border-gray-300 flex w-full min-w-0 rounded-md border px-3 py-1 text-base bg-gray-50 transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+    "focus-visible:border-primary focus-visible:ring-primary/50 focus-visible:ring-[3px]",
+    error && "border-red-500 ring-red-500/20",
+    !multiline && "h-9",
+    className,
+  );
+
+  const inputElement = multiline ? (
+    <textarea
+      data-slot="textarea"
+      rows={rows}
+      className={baseClassName}
+      {...props}
+    />
+  ) : (
     <input
       type={type}
       data-slot="input"
-      className={cn(
-        "placeholder:text-gray-400 selection:bg-primary selection:text-white border-gray-300 flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base bg-gray-50 transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-        "focus-visible:border-primary focus-visible:ring-primary/50 focus-visible:ring-[3px]",
-        error && "border-red-500 ring-red-500/20",
-        className,
-      )}
+      className={baseClassName}
       {...props}
     />
   );

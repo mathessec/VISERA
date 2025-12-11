@@ -16,3 +16,4 @@ FOREIGN KEY (shipment_id) REFERENCES shipments(id) ON DELETE CASCADE;
 -- Verify the change
 SHOW CREATE TABLE shipment_workers;
 
+

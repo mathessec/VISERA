@@ -1,65 +1,63 @@
 import { X } from 'lucide-react';
-import Select from '../common/Select';
 import Input from '../common/Input';
 import Button from '../common/Button';
 
 export default function PackageInputRow({
-  packageNumber,
-  skuOptions = [],
-  selectedSku,
-  quantity,
-  onSkuChange,
-  onQuantityChange,
+  pkg,
+  index,
+  skus,
+  onChange,
   onRemove,
-  error,
 }) {
+  // Defensive defaults to avoid runtime errors if pkg/skus are undefined
+  const current = pkg || { skuId: '', quantity: '' };
+  const skuList = Array.isArray(skus) ? skus : [];
+
   return (
-    <div className="grid grid-cols-12 gap-4 items-start p-4 border border-gray-200 rounded-lg bg-gray-50">
-      <div className="col-span-1 flex items-center justify-center">
-        <span className="text-sm font-semibold text-gray-600">
-          #{packageNumber}
-        </span>
+    <div className="flex gap-3 items-start">
+      <div className="flex-1">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          SKU
+        </label>
+        <select
+          value={current.skuId ? String(current.skuId) : ''}
+          onChange={(e) => onChange(index, 'skuId', e.target.value)}
+          className="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 outline-none"
+          required
+        >
+          <option value="">Select SKU</option>
+          {skuList.map((sku) => (
+            <option key={sku.id} value={String(sku.id)}>
+              {sku.skuCode} - {sku.product?.name || 'Unknown Product'}
+            </option>
+          ))}
+        </select>
       </div>
-      <div className="col-span-5">
-        <Select
-          label="SKU"
-          name={`sku-${packageNumber}`}
-          value={selectedSku || ''}
-          onChange={(e) => onSkuChange(e.target.value)}
-          options={[
-            { value: '', label: 'Select SKU...' },
-            ...skuOptions.map((sku) => ({
-              value: sku.id.toString(),
-              label: `${sku.skuCode} - ${sku.productName || 'N/A'}`,
-            })),
-          ]}
-          error={error?.sku}
-        />
-      </div>
-      <div className="col-span-4">
+      
+      <div className="w-32">
         <Input
           label="Quantity"
           type="number"
           min="1"
-          value={quantity || ''}
-          onChange={(e) => onQuantityChange(e.target.value)}
-          placeholder="Enter quantity"
-          error={error?.quantity}
+          value={current.quantity || ''}
+          onChange={(e) =>
+            onChange(index, 'quantity', e.target.value)
+          }
+          placeholder="Qty"
+          required
         />
       </div>
-      <div className="col-span-2 flex items-end pb-2">
+
+      <div className="pt-7">
         <Button
           type="button"
-          variant="outline"
+          variant="danger"
           size="sm"
-          onClick={onRemove}
-          className="w-full"
+          onClick={() => onRemove(index)}
         >
-          <X size={16} className="mr-1" />
-          Remove
+          <X size={16} />
         </Button>
       </div>
     </div>
   );
 }
-

@@ -21,6 +21,10 @@ public class Product {
     private String name;
     private String description;
 
+    @Column(unique = true)
+    @NotBlank(message = "Product code must not be blank")
+    private String productCode;
+
     @NotBlank(message = "Category must not be blank")
     private String category;
 

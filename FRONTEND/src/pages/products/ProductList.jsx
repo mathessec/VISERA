@@ -56,7 +56,13 @@ export default function ProductList() {
       fetchProducts(); // Refresh the list
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to delete product");
+      // Handle different error response formats
+      const errorMessage = 
+        err.response?.data?.message || 
+        err.response?.data?.error || 
+        err.message || 
+        "Failed to delete product";
+      setError(errorMessage);
       setDeleteModalOpen(false);
     } finally {
       setDeleting(false);
@@ -65,6 +71,7 @@ export default function ProductList() {
 
   const columns = [
     { key: "id", label: "Product ID" },
+    { key: "productCode", label: "Product Code" },
     { key: "name", label: "Name" },
     { key: "category", label: "Category" },
     {
@@ -79,6 +86,7 @@ export default function ProductList() {
     (product) =>
       product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.id?.toString().includes(searchTerm) ||
+      product.productCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

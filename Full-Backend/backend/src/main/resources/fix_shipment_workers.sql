@@ -19,3 +19,4 @@ CREATE TABLE IF NOT EXISTS shipment_workers (
     UNIQUE KEY unique_shipment_worker (shipment_id, worker_id)
 );
 
+

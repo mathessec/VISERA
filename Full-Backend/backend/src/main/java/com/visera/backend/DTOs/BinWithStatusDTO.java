@@ -14,3 +14,4 @@ public class BinWithStatusDTO {
     private Integer currentQuantity;
 }
 
+

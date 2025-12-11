@@ -23,6 +23,7 @@ export default function ProductCreate() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    productCode: "",
     category: "",
     status: "Active",
   });
@@ -78,6 +79,15 @@ export default function ProductCreate() {
               onChange={handleChange}
               required
               placeholder="Enter product name"
+            />
+
+            <Input
+              label="Product Code"
+              name="productCode"
+              value={formData.productCode}
+              onChange={handleChange}
+              required
+              placeholder="Enter unique product code (e.g., PROD-001)"
             />
 
             <div>

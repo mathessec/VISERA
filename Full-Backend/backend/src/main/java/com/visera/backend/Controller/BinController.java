@@ -1,7 +1,5 @@
 package com.visera.backend.Controller;
 
-import com.visera.backend.DTOs.BinCreateDTO;
-import com.visera.backend.DTOs.BinWithStatusDTO;
 import com.visera.backend.Entity.Bin;
 import com.visera.backend.Service.BinService;
 import jakarta.validation.Valid;
@@ -24,20 +22,14 @@ public class BinController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
     @PostMapping("/create")
-    public ResponseEntity<Bin> create(@Valid @RequestBody BinCreateDTO binCreateDTO) {
-        return ResponseEntity.ok(binService.createBin(binCreateDTO));
+    public ResponseEntity<Bin> create(@Valid @RequestBody Bin bin) {
+        return ResponseEntity.ok(binService.createBin(bin));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
     @GetMapping("/rack/{rackId}")
-    public ResponseEntity<List<Bin>> getByRack(@PathVariable Long rackId) {
+    public ResponseEntity<List<Bin>> getByRack(@PathVariable int rackId) {
         return ResponseEntity.ok(binService.getBinsByRack(rackId));
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
-    @GetMapping("/rack/{rackId}/with-status")
-    public ResponseEntity<List<BinWithStatusDTO>> getBinsWithStatusByRack(@PathVariable Long rackId) {
-        return ResponseEntity.ok(binService.getBinsWithStatusByRack(rackId));
     }
 }
 

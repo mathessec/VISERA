@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus } from 'lucide-react';
-import Card from '../../components/common/Card';
+import { ArrowLeft, Plus, X } from 'lucide-react';
+import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import Select from '../../components/common/Select';
 import Input from '../../components/common/Input';
+import Select from '../../components/common/Select';
 import MultiSelect from '../../components/common/MultiSelect';
 import PackageInputRow from '../../components/shipments/PackageInputRow';
 import Alert from '../../components/common/Alert';
@@ -17,17 +17,24 @@ import { getUserId } from '../../services/authService';
 
 export default function ShipmentCreate() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [workers, setWorkers] = useState([]);
   const [skus, setSkus] = useState([]);
+  
+  // Set default deadline to tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const defaultDeadline = tomorrow.toISOString().split('T')[0];
+  
   const [formData, setFormData] = useState({
     shipmentType: 'INBOUND',
     status: 'CREATED',
-    deadline: '',
+    deadline: defaultDeadline,
     selectedWorkers: [],
   });
-  const [packageCount, setPackageCount] = useState(1);
+  
   const [packages, setPackages] = useState([
     { skuId: '', quantity: '' },
   ]);
@@ -38,15 +45,17 @@ export default function ShipmentCreate() {
 
   const fetchData = async () => {
     try {
-      const [usersData, skusData] = await Promise.all([
+      setLoading(true);
+      const [workersData, skusData] = await Promise.all([
         getAllUsers(),
         getAllSkus(),
       ]);
-      setWorkers(usersData.filter((u) => u.role === 'WORKER'));
+      setWorkers(workersData.filter((u) => u.role === 'WORKER'));
       setSkus(skusData);
     } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Failed to load workers or SKUs');
+      setError('Failed to load data');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,19 +64,18 @@ export default function ShipmentCreate() {
     setError('');
   };
 
-  const handlePackageCountChange = (e) => {
-    const count = parseInt(e.target.value) || 1;
-    setPackageCount(Math.max(1, count));
-    
-    // Adjust packages array
-    const newPackages = [...packages];
-    while (newPackages.length < count) {
-      newPackages.push({ skuId: '', quantity: '' });
+  const handleWorkersChange = (selectedIds) => {
+    setFormData({ ...formData, selectedWorkers: selectedIds });
+  };
+
+  const handleAddPackage = () => {
+    setPackages([...packages, { skuId: '', quantity: '' }]);
+  };
+
+  const handleRemovePackage = (index) => {
+    if (packages.length > 1) {
+      setPackages(packages.filter((_, i) => i !== index));
     }
-    while (newPackages.length > count) {
-      newPackages.pop();
-    }
-    setPackages(newPackages);
   };
 
   const handlePackageChange = (index, field, value) => {
@@ -76,17 +84,14 @@ export default function ShipmentCreate() {
     setPackages(newPackages);
   };
 
-  const handleRemovePackage = (index) => {
-    if (packages.length > 1) {
-      const newPackages = packages.filter((_, i) => i !== index);
-      setPackages(newPackages);
-      setPackageCount(newPackages.length);
-    }
-  };
-
   const validateForm = () => {
     if (!formData.deadline) {
       setError('Deadline is required');
+      return false;
+    }
+
+    if (packages.length === 0) {
+      setError('At least one package is required');
       return false;
     }
 
@@ -103,23 +108,23 @@ export default function ShipmentCreate() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     
     if (!validateForm()) {
       return;
     }
 
-    setLoading(true);
+    setError('');
+    setSaving(true);
 
     try {
       const userId = getUserId();
       if (!userId) {
         setError('User ID not found. Please log in again.');
-        setLoading(false);
+        setSaving(false);
         return;
       }
 
-      // 1. Create shipment
+      // Step 1: Create shipment
       const shipmentPayload = {
         shipmentType: formData.shipmentType,
         status: formData.status,
@@ -129,41 +134,36 @@ export default function ShipmentCreate() {
       
       const shipment = await createShipment(shipmentPayload);
 
-      // 2. Assign workers if any selected
+      // Step 2: Assign workers if any selected
       if (formData.selectedWorkers.length > 0) {
         await assignWorkers(shipment.id, formData.selectedWorkers);
       }
 
-      // 3. Create shipment items (packages)
-      const shipmentItems = packages.map((pkg) => ({
+      // Step 3: Create packages
+      const packagePayload = packages.map((pkg) => ({
         shipment: { id: shipment.id },
         sku: { id: parseInt(pkg.skuId) },
         quantity: parseInt(pkg.quantity),
-        status: 'CREATED',
+        status: 'PENDING',
       }));
 
-      await createBatchItems(shipmentItems);
+      await createBatchItems(packagePayload);
 
+      // Navigate to shipment detail page
       navigate(`/shipments/${shipment.id}`);
     } catch (err) {
       console.error('Error creating shipment:', err);
-      const errorMessage =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        err.message ||
-        'Failed to create shipment';
+      const errorMessage = err.response?.data?.message 
+        || err.response?.data?.error 
+        || err.message 
+        || 'Failed to create shipment';
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const workerOptions = workers.map((worker) => ({
-    value: worker.id,
-    label: worker.name,
-  }));
-
-  if (loading) return <Loading text="Creating shipment..." />;
+  if (loading) return <Loading text="Loading..." />;
 
   return (
     <div className="space-y-6">
@@ -174,17 +174,19 @@ export default function ShipmentCreate() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Create Shipment</h1>
-          <p className="text-gray-600 mt-1">
-            Create a new inbound or outbound shipment
-          </p>
+          <p className="text-gray-600 mt-1">Create a new inbound or outbound shipment</p>
         </div>
       </div>
 
-      {error && <Alert variant="error">{error}</Alert>}
+      {error && <Alert variant="error" onClose={() => setError('')}>{error}</Alert>}
 
-      <Card>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Shipment Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Shipment Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <Select
               label="Shipment Type"
               name="shipmentType"
@@ -205,93 +207,91 @@ export default function ShipmentCreate() {
               required
               options={[
                 { value: 'CREATED', label: 'Created' },
+                { value: 'IN_TRANSIT', label: 'In Transit' },
                 { value: 'ARRIVED', label: 'Arrived' },
               ]}
             />
-          </div>
 
-          <Input
-            label="Deadline"
-            type="date"
-            name="deadline"
-            value={formData.deadline}
-            onChange={handleChange}
-            required
-            error={error && !formData.deadline ? 'Deadline is required' : ''}
-          />
-
-          <MultiSelect
-            label="Assign Workers"
-            options={workerOptions}
-            value={formData.selectedWorkers}
-            onChange={(selected) =>
-              setFormData({ ...formData, selectedWorkers: selected })
-            }
-            placeholder="Select workers..."
-            searchable
-          />
-
-          <div>
             <Input
-              label="Package Count"
-              type="number"
-              min="1"
-              value={packageCount}
-              onChange={handlePackageCountChange}
+              label="Deadline"
+              type="date"
+              name="deadline"
+              value={formData.deadline}
+              onChange={handleChange}
               required
+              min={new Date().toISOString().split('T')[0]}
             />
-            <p className="text-sm text-gray-500 mt-1">
-              Total packages: {packageCount}
-            </p>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Package Details
-            </h3>
+        {/* Worker Assignment */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Worker Assignment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MultiSelect
+              label="Assign Workers"
+              options={workers.map((w) => ({
+                value: w.id,
+                label: `${w.name} (${w.email})`,
+              }))}
+              value={formData.selectedWorkers}
+              onChange={handleWorkersChange}
+              placeholder="Select workers to assign..."
+            />
+          </CardContent>
+        </Card>
+
+        {/* Package Details */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Package Details</CardTitle>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddPackage}
+              >
+                <Plus size={16} className="mr-2" />
+                Add Package
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
             {packages.map((pkg, index) => (
               <PackageInputRow
                 key={index}
-                packageNumber={index + 1}
-                skuOptions={skus}
-                selectedSku={pkg.skuId}
-                quantity={pkg.quantity}
-                onSkuChange={(value) =>
-                  handlePackageChange(index, 'skuId', value)
-                }
-                onQuantityChange={(value) =>
-                  handlePackageChange(index, 'quantity', value)
-                }
-                onRemove={() => handleRemovePackage(index)}
-                error={
-                  error && index === packages.length - 1
-                    ? {
-                        sku: !pkg.skuId ? 'SKU is required' : '',
-                        quantity:
-                          !pkg.quantity || parseInt(pkg.quantity) <= 0
-                            ? 'Valid quantity is required'
-                            : '',
-                      }
-                    : null
-                }
+                pkg={pkg}
+                index={index}
+                skus={skus}
+                onChange={handlePackageChange}
+                onRemove={handleRemovePackage}
               />
             ))}
-          </div>
+            {packages.length === 0 && (
+              <p className="text-gray-500 text-center py-4">
+                No packages added. Click "Add Package" to add items.
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
-          <div className="flex gap-4 pt-4">
-            <Button type="submit" variant="primary" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Shipment'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/shipments')}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
-      </Card>
+        {/* Action Buttons */}
+        <div className="flex gap-4">
+          <Button type="submit" variant="primary" disabled={saving}>
+            {saving ? 'Creating...' : 'Create Shipment'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate('/shipments')}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

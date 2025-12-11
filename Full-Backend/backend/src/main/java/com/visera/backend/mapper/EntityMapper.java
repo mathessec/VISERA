@@ -28,8 +28,8 @@ public class EntityMapper {
         dto.setAssignedTo(shipment.getAssignedTo());
         dto.setDeadline(shipment.getDeadline());
         dto.setCreatedAt(shipment.getCreatedAt());
-        
-        // Get assigned workers
+
+        // Assigned workers
         List<ShipmentWorker> shipmentWorkers = shipmentWorkerRepository.findByShipment(shipment);
         List<UserDTO> assignedWorkers = shipmentWorkers.stream()
                 .map(sw -> {
@@ -42,11 +42,10 @@ public class EntityMapper {
                 })
                 .collect(Collectors.toList());
         dto.setAssignedWorkers(assignedWorkers);
-        
-        // Get package count
+
+        // Package count
         int packageCount = shipmentItemRepository.findByShipmentId(shipment.getId()).size();
         dto.setPackageCount(packageCount);
-        
         return dto;
     }
 
@@ -59,6 +58,7 @@ public class EntityMapper {
         dto.setStatus(item.getStatus());
         dto.setSkuCode(item.getSku().getSkuCode());
         dto.setProductName(item.getSku().getProduct().getName());
+        dto.setProductCode(item.getSku().getProduct().getProductCode());
         return dto;
     }
 

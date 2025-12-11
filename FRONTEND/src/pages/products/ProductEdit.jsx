@@ -19,6 +19,7 @@ export default function ProductEdit() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    productCode: "",
     category: "",
     status: "Active",
   });
@@ -33,6 +34,7 @@ export default function ProductEdit() {
       setFormData({
         name: data.name || "",
         description: data.description || "",
+        productCode: data.productCode || "",
         category: data.category || "",
         status: data.status || "Active",
       });
@@ -96,6 +98,15 @@ export default function ProductEdit() {
             placeholder="Enter product name"
           />
 
+          <Input
+            label="Product Code"
+            name="productCode"
+            value={formData.productCode}
+            onChange={handleChange}
+            required
+            placeholder="Enter unique product code (e.g., PROD-001)"
+          />
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Description
@@ -150,5 +161,6 @@ export default function ProductEdit() {
     </div>
   );
 }
+
 
 

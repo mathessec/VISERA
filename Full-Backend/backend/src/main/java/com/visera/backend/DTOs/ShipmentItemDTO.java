@@ -11,5 +11,10 @@ public class ShipmentItemDTO {
     private String status;
     private String skuCode;
     private String productName;
+    private String productCode;
+    private String zoneName;
+    private String rackName;
+    private String binName;
+    private String binCode;
 }
 

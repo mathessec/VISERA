@@ -8,6 +8,7 @@ public class ProductDTO {
     private long id;
     private String name;
     private String description;
+    private String productCode;
     private String category;
     private String status;
     private long totalSkus;

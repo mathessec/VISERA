@@ -1,13 +1,14 @@
 package com.visera.backend.Controller;
 
-import com.visera.backend.DTOs.UserDTO;
-import com.visera.backend.Entity.User;
-import com.visera.backend.Service.UserService;
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import com.visera.backend.DTOs.UserDTO;
+import com.visera.backend.Entity.User;
+import com.visera.backend.Service.UserService;
 
 @RestController
 @RequestMapping("/api/users")
@@ -56,8 +57,7 @@ public class UserController {
     @GetMapping("/getallusersDTOs")
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         return ResponseEntity.ok(
-                userService.getAllUsers().stream().map(this::mapToDTO).collect(java.util.stream.Collectors.toList())
-
+                userService.getAllUsers().stream().map(this::mapToDTO).toList()
         );
     }
 
@@ -67,7 +67,6 @@ public class UserController {
         dto.setName(user.getName());
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole());
-        dto.setCreatedAt(user.getCreatedAt());
         return dto;
     }
 }

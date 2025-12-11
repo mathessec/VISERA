@@ -10,4 +10,6 @@ public interface ShipmentItemRepository extends JpaRepository<ShipmentItem, Long
     List<ShipmentItem> findByShipmentId(Long shipmentId);
 
     List<ShipmentItem> findByStatus(String status);
+    
+    List<ShipmentItem> findBySkuIdIn(List<Long> skuIds);
 }
