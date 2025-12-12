@@ -28,3 +28,4 @@ export const verifyLabel = async (imageFile, expectedData) => {
   return response.data;
 };
 
+

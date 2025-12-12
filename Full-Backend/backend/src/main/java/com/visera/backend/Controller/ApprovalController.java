@@ -64,11 +64,13 @@ public class ApprovalController {
     @PostMapping("/{id}/approve")
     public ResponseEntity<Approval> approveRequest(@PathVariable Long id) {
         try {
-            // Get current user
+            // Get current user email from authentication
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            Long supervisorId = Long.parseLong(authentication.getName());
-            User supervisor = userRepository.findById(supervisorId)
-                .orElseThrow(() -> new RuntimeException("Supervisor not found"));
+            String userEmail = authentication.getName();
+            
+            // Find user by email
+            User supervisor = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("Supervisor not found with email: " + userEmail));
 
             // Approve the request
             Approval approval = approvalService.approveRequest(id, supervisor);
@@ -110,11 +112,13 @@ public class ApprovalController {
         @RequestBody Map<String, String> body
     ) {
         try {
-            // Get current user
+            // Get current user email from authentication
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            Long supervisorId = Long.parseLong(authentication.getName());
-            User supervisor = userRepository.findById(supervisorId)
-                .orElseThrow(() -> new RuntimeException("Supervisor not found"));
+            String userEmail = authentication.getName();
+            
+            // Find user by email
+            User supervisor = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("Supervisor not found with email: " + userEmail));
 
             String reason = body.get("reason");
             Approval approval = approvalService.rejectRequest(id, supervisor, reason);

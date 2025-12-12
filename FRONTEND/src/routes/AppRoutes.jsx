@@ -21,6 +21,7 @@ import Workers from "../pages/supervisor/Workers";
 
 // Worker pages
 import Inbound from "../pages/worker/Inbound";
+import Outbound from "../pages/worker/Outbound";
 import Issues from "../pages/worker/Issues";
 import Picking from "../pages/worker/Picking";
 import Putaway from "../pages/worker/Putaway";
@@ -195,6 +196,16 @@ export default function AppRoutes() {
             <ProtectedRoute allowedRoles={["WORKER"]}>
               <Layout>
                 <Inbound />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/worker/outbound"
+          element={
+            <ProtectedRoute allowedRoles={["WORKER"]}>
+              <Layout>
+                <Outbound />
               </Layout>
             </ProtectedRoute>
           }

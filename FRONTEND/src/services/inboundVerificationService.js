@@ -19,3 +19,4 @@ export const getShipmentItemsWithLocations = async (shipmentId) => {
   return response.data;
 };
 
+

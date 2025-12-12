@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Package, FileText, Users, Warehouse, 
   BarChart3, ShoppingCart, 
-  ClipboardList, AlertCircle, TrendingUp, MapPin, Boxes, CheckSquare, Monitor, PackageSearch, ScanEye, Package2
+  ClipboardList, AlertCircle, TrendingUp, MapPin, Boxes, CheckSquare, Monitor, PackageSearch, ScanEye, Package2, Truck
 } from 'lucide-react';
 import { logout, getRole } from '../../services/authService';
 import { cn } from '../../utils/helpers';
@@ -30,6 +30,7 @@ const menuByRole = {
   WORKER: [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/worker/dashboard' },
     { name: 'Inbound Shipment', icon: PackageSearch, path: '/worker/inbound' },
+    { name: 'Outbound Verification', icon: Truck, path: '/worker/outbound' },
     { name: 'Putaway', icon: MapPin, path: '/worker/putaway' },
     { name: 'Outbound Picking', icon: ShoppingCart, path: '/worker/picking' },
     { name: 'Issue Reporting', icon: AlertCircle, path: '/worker/issues' },

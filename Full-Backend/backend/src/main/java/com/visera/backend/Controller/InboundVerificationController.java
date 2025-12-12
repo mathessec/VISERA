@@ -5,8 +5,10 @@ import com.visera.backend.DTOs.VerificationResponse;
 import com.visera.backend.Entity.Bin;
 import com.visera.backend.Entity.InventoryStock;
 import com.visera.backend.Entity.Rack;
+import com.visera.backend.Entity.User;
 import com.visera.backend.Entity.Zone;
 import com.visera.backend.Repository.InventoryStockRepository;
+import com.visera.backend.Repository.UserRepository;
 import com.visera.backend.Service.InboundVerificationService;
 import com.visera.backend.Service.ShipmentItemService;
 import com.visera.backend.mapper.EntityMapper;
@@ -32,15 +34,18 @@ public class InboundVerificationController {
     private final InboundVerificationService inboundVerificationService;
     private final ShipmentItemService shipmentItemService;
     private final InventoryStockRepository inventoryStockRepository;
+    private final UserRepository userRepository;
 
     public InboundVerificationController(
         InboundVerificationService inboundVerificationService,
         ShipmentItemService shipmentItemService,
-        InventoryStockRepository inventoryStockRepository
+        InventoryStockRepository inventoryStockRepository,
+        UserRepository userRepository
     ) {
         this.inboundVerificationService = inboundVerificationService;
         this.shipmentItemService = shipmentItemService;
         this.inventoryStockRepository = inventoryStockRepository;
+        this.userRepository = userRepository;
     }
 
     @PreAuthorize("hasRole('WORKER')")
@@ -50,9 +55,14 @@ public class InboundVerificationController {
         @RequestParam("image") MultipartFile image
     ) {
         try {
-            // Get current user ID from authentication
+            // Get current user email from authentication
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            Long workerId = Long.parseLong(authentication.getName());
+            String userEmail = authentication.getName();
+            
+            // Find user by email and get ID
+            User worker = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("Worker not found with email: " + userEmail));
+            Long workerId = worker.getId();
 
             VerificationResponse response = inboundVerificationService.verifyAndProcessInbound(
                 shipmentItemId,
