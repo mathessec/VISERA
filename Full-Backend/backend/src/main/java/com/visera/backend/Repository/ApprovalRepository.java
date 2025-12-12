@@ -1,10 +1,11 @@
 package com.visera.backend.Repository;
 
-import com.visera.backend.Entity.Approval;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.visera.backend.Entity.Approval;
 
 @Repository
 public interface ApprovalRepository extends JpaRepository<Approval, Long> {
@@ -12,5 +13,7 @@ public interface ApprovalRepository extends JpaRepository<Approval, Long> {
     List<Approval> findByRequestedById(Long userId);
     List<Approval> findByShipmentItemId(Long shipmentItemId);
 }
+
+
 
 

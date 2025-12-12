@@ -1,7 +1,8 @@
 package com.visera.backend.Service;
 
-import com.visera.backend.DTOs.VerificationResponse;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.visera.backend.DTOs.VerificationResponse;
 
 public interface InboundVerificationService {
     VerificationResponse verifyAndProcessInbound(
@@ -10,5 +11,7 @@ public interface InboundVerificationService {
         Long workerId
     );
 }
+
+
 
 

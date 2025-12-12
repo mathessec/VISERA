@@ -1,7 +1,8 @@
 package com.visera.backend.Service;
 
-import com.visera.backend.DTOs.OCRVerificationResult;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.visera.backend.DTOs.OCRVerificationResult;
 
 public interface OCRService {
     OCRVerificationResult verifyPackageLabel(
@@ -13,5 +14,7 @@ public interface OCRService {
         String expectedDimensions
     );
 }
+
+
 
 
