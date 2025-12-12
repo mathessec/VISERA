@@ -16,6 +16,7 @@ C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backe
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Controller\ZoneController.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\ApprovalDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\BinCreateDTO.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\BinUpdateDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\BinWithStatusDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\InventoryStockDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\InventoryStockRequest.java
@@ -25,6 +26,7 @@ C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backe
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\OCRVerificationResult.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\ProductDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\RackCreateDTO.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\RackUpdateDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\RackWithBinsDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\RegisterUserDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\ShipmentDTO.java
@@ -35,6 +37,7 @@ C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backe
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\UserDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\VerificationDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\VerificationResponse.java
+C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\VerificationSummaryDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\ZoneStatisticsDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\DTOs\ZoneUpdateDTO.java
 C:\Users\SEC\Desktop\upsproj\Full-Backend\backend\src\main\java\com\visera\backend\Entity\Approval.java

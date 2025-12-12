@@ -1,6 +1,7 @@
 package com.visera.backend.Controller;
 
 import com.visera.backend.DTOs.VerificationDTO;
+import com.visera.backend.DTOs.VerificationSummaryDTO;
 import com.visera.backend.Entity.VerificationLog;
 import com.visera.backend.Service.VerificationLogService;
 import com.visera.backend.mapper.EntityMapper;
@@ -47,6 +48,52 @@ public class VerificationLogController {
                         .map(mapper::toVerificationDTO).collect(java.util.stream.Collectors.toList())
 
         );
+    }
+    
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @GetMapping("/all")
+    public ResponseEntity<List<VerificationDTO>> getAllVerificationLogs(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String operation,
+            @RequestParam(required = false) String result,
+            @RequestParam(required = false) String status
+    ) {
+        List<VerificationLog> logs;
+        
+        if (search != null || operation != null || result != null || status != null) {
+            logs = verificationLogService.getVerificationLogsWithFilters(search, operation, result, status);
+        } else {
+            logs = verificationLogService.getAllVerificationLogs();
+        }
+        
+        return ResponseEntity.ok(
+                logs.stream()
+                        .map(mapper::toVerificationDTO)
+                        .collect(java.util.stream.Collectors.toList())
+        );
+    }
+    
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @GetMapping("/summary")
+    public ResponseEntity<VerificationSummaryDTO> getVerificationSummary() {
+        return ResponseEntity.ok(verificationLogService.getVerificationSummary());
+    }
+    
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @PutMapping("/{id}")
+    public ResponseEntity<VerificationDTO> updateVerificationLog(
+            @PathVariable Long id,
+            @RequestBody VerificationLog updatedLog
+    ) {
+        VerificationLog log = verificationLogService.updateVerificationLog(id, updatedLog);
+        return ResponseEntity.ok(mapper.toVerificationDTO(log));
+    }
+    
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteVerificationLog(@PathVariable Long id) {
+        verificationLogService.deleteVerificationLog(id);
+        return ResponseEntity.noContent().build();
     }
 
 }

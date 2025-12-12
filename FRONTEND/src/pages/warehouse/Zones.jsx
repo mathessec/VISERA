@@ -18,8 +18,18 @@ import Loading from "../../components/common/Loading";
 import Modal from "../../components/common/Modal";
 import { Progress } from "../../components/common/Progress";
 import { getRole } from "../../services/authService";
-import { createBin, getBinsWithStatusByRack } from "../../services/binService";
-import { createRack, getRacksWithBinsByZone } from "../../services/rackService";
+import {
+  createBin,
+  deleteBin,
+  getBinsWithStatusByRack,
+  updateBin,
+} from "../../services/binService";
+import {
+  createRack,
+  deleteRack,
+  getRacksWithBinsByZone,
+  updateRack,
+} from "../../services/rackService";
 import {
   createZone,
   deleteZone,
@@ -35,6 +45,8 @@ export default function Zones() {
   const [isRackModalOpen, setIsRackModalOpen] = useState(false);
   const [isBinModalOpen, setIsBinModalOpen] = useState(false);
   const [editingZone, setEditingZone] = useState(null);
+  const [editingRack, setEditingRack] = useState(null);
+  const [editingBin, setEditingBin] = useState(null);
   const [zoneFormData, setZoneFormData] = useState({
     name: "",
     description: "",
@@ -46,6 +58,7 @@ export default function Zones() {
   });
   const [binFormData, setBinFormData] = useState({
     rackId: "",
+    zoneId: "", // Store zoneId for refreshing racks after bin creation
     name: "",
     capacity: "",
   });
@@ -175,25 +188,39 @@ export default function Zones() {
   const handleRackCreate = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+    setError("");
     try {
-      await createRack({
-        zoneId: Number.parseInt(rackFormData.zoneId, 10),
-        name: rackFormData.name,
-        description: rackFormData.description || "",
-      });
+      const zoneId = Number.parseInt(rackFormData.zoneId, 10);
+
+      if (editingRack) {
+        await updateRack(editingRack.id, {
+          name: rackFormData.name,
+          description: rackFormData.description || "",
+        });
+      } else {
+        await createRack({
+          zoneId: zoneId,
+          name: rackFormData.name,
+          description: rackFormData.description || "",
+        });
+      }
+
       setIsRackModalOpen(false);
       setRackFormData({ zoneId: "", name: "", description: "" });
+      setEditingRack(null);
 
       // Refresh racks for the zone
-      const zoneId = Number.parseInt(rackFormData.zoneId, 10);
       const racks = await getRacksWithBinsByZone(zoneId);
       setZoneRacks((prev) => new Map(prev).set(zoneId, racks));
 
       // Refresh zone statistics
       fetchZones();
     } catch (error) {
-      console.error("Failed to create rack:", error);
-      setError(error.response?.data?.message || "Failed to create rack");
+      console.error("Failed to save rack:", error);
+      setError(
+        error.response?.data?.message ||
+          `Failed to ${editingRack ? "update" : "create"} rack`
+      );
     } finally {
       setSubmitting(false);
     }
@@ -229,32 +256,71 @@ export default function Zones() {
         return;
       }
 
-      await createBin({
-        rackId: rackId,
-        name: name,
-        capacity: capacity,
-      });
+      // Get zoneId from binFormData (stored when modal was opened) BEFORE clearing it
+      const zoneId = Number.parseInt(binFormData.zoneId, 10);
+
+      if (editingBin) {
+        await updateBin(editingBin.id, {
+          name: name,
+          capacity: capacity,
+        });
+      } else {
+        await createBin({
+          rackId: rackId,
+          name: name,
+          capacity: capacity,
+        });
+      }
+
+      // Close modal and clear form
       setIsBinModalOpen(false);
-      setBinFormData({ rackId: "", name: "", capacity: "" });
+      setBinFormData({ rackId: "", zoneId: "", name: "", capacity: "" });
+      setEditingBin(null);
 
-      // Refresh bins for the rack
+      // Ensure the zone is expanded first
+      setExpandedZones((prev) => {
+        const next = new Set(prev);
+        next.add(zoneId);
+        return next;
+      });
+
+      // Ensure the rack is expanded so bins are visible
+      setExpandedRacks((prev) => {
+        const next = new Map(prev);
+        const rackSet = next.get(zoneId) || new Set();
+        const newRackSet = new Set(rackSet);
+        newRackSet.add(rackId); // Ensure rack is expanded
+        next.set(zoneId, newRackSet);
+        return next;
+      });
+
+      // Clear loading state for this rack to allow refetch
+      setLoadingBins((prev) => {
+        const next = new Set(prev);
+        next.delete(rackId);
+        return next;
+      });
+
+      // Refresh bins for the rack - create a new Map to ensure React detects the change
       const bins = await getBinsWithStatusByRack(rackId);
-      setRackBins((prev) => new Map(prev).set(rackId, bins));
+      setRackBins((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(rackId, bins);
+        return newMap;
+      });
 
-      // Refresh racks to update bin count
-      const racks = zoneRacks.get(
-        Number.parseInt(rackFormData.zoneId || "0", 10)
-      );
-      if (racks) {
-        const rack = racks.find((r) => r.id === rackId);
-        if (rack) {
-          const updatedRacks = await getRacksWithBinsByZone(rack.zoneId);
-          setZoneRacks((prev) => new Map(prev).set(rack.zoneId, updatedRacks));
-        }
+      // Refresh racks to update bin count - use zoneId directly
+      if (zoneId && !Number.isNaN(zoneId)) {
+        const updatedRacks = await getRacksWithBinsByZone(zoneId);
+        setZoneRacks((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(zoneId, updatedRacks);
+          return newMap;
+        });
       }
 
       // Refresh zone statistics
-      fetchZones();
+      await fetchZones();
     } catch (error) {
       console.error("Failed to create bin:", error);
       const errorMessage =
@@ -279,18 +345,162 @@ export default function Zones() {
   };
 
   const handleDelete = async (zoneId) => {
-    if (
-      !globalThis.confirm(
-        "Are you sure you want to delete this zone? This action cannot be undone."
-      )
-    )
-      return;
+    // Get zone info for confirmation message
+    const zone = zones.find((z) => z.zoneId === zoneId);
+    const racks = zoneRacks.get(zoneId) || [];
+    const totalBins = racks.reduce(
+      (sum, rack) => sum + (rack.binCount || 0),
+      0
+    );
+
+    const confirmMessage = `Are you sure you want to delete "${
+      zone?.zoneName || "this zone"
+    }"?\n\nThis will delete:\n- ${
+      racks.length
+    } rack(s)\n- ${totalBins} bin(s)\n- All inventory in those bins\n\nThis action cannot be undone.`;
+
+    if (!globalThis.confirm(confirmMessage)) return;
+
     try {
       await deleteZone(zoneId);
+      // Clear cached data for this zone
+      setZoneRacks((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(zoneId);
+        return newMap;
+      });
+      setExpandedZones((prev) => {
+        const next = new Set(prev);
+        next.delete(zoneId);
+        return next;
+      });
       fetchZones();
     } catch (error) {
       console.error("Failed to delete zone:", error);
-      setError("Failed to delete zone");
+      setError(
+        error.response?.data?.message ||
+          "Failed to delete zone. Make sure it has no associated data."
+      );
+    }
+  };
+
+  const handleRackEdit = (rack, zoneId) => {
+    setEditingRack(rack);
+    setRackFormData({
+      zoneId: zoneId.toString(),
+      name: rack.name,
+      description: rack.description || "",
+    });
+    setIsRackModalOpen(true);
+  };
+
+  const handleRackDelete = async (rackId, zoneId) => {
+    const racks = zoneRacks.get(zoneId) || [];
+    const rack = racks.find((r) => r.id === rackId);
+    const bins = rackBins.get(rackId) || [];
+
+    const confirmMessage = `Are you sure you want to delete "${
+      rack?.name || "this rack"
+    }"?\n\nThis will delete:\n- ${
+      bins.length
+    } bin(s)\n- All inventory in those bins\n\nThis action cannot be undone.`;
+
+    if (!globalThis.confirm(confirmMessage)) return;
+
+    try {
+      await deleteRack(rackId);
+
+      // Clear cached bins for this rack
+      setRackBins((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(rackId);
+        return newMap;
+      });
+
+      // Remove rack from expanded set
+      setExpandedRacks((prev) => {
+        const next = new Map(prev);
+        const rackSet = next.get(zoneId) || new Set();
+        const newRackSet = new Set(rackSet);
+        newRackSet.delete(rackId);
+        next.set(zoneId, newRackSet);
+        return next;
+      });
+
+      // Refresh racks for the zone
+      const updatedRacks = await getRacksWithBinsByZone(zoneId);
+      setZoneRacks((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(zoneId, updatedRacks);
+        return newMap;
+      });
+
+      // Refresh zone statistics
+      fetchZones();
+    } catch (error) {
+      console.error("Failed to delete rack:", error);
+      setError(error.response?.data?.message || "Failed to delete rack");
+    }
+  };
+
+  const handleBinEdit = (bin, rackId, zoneId) => {
+    setEditingBin(bin);
+    setBinFormData({
+      rackId: rackId.toString(),
+      zoneId: zoneId.toString(),
+      name: bin.name || "",
+      capacity: bin.capacity?.toString() || "",
+    });
+    setIsBinModalOpen(true);
+  };
+
+  const handleBinDelete = async (
+    binId,
+    rackId,
+    zoneId,
+    binName,
+    isOccupied
+  ) => {
+    if (isOccupied) {
+      const confirmMessage = `Warning: This bin "${binName}" contains inventory.\n\nAre you sure you want to delete it? This will remove all inventory records.\n\nThis action cannot be undone.`;
+      if (!globalThis.confirm(confirmMessage)) return;
+    } else {
+      if (
+        !globalThis.confirm(
+          `Are you sure you want to delete "${binName}"?\n\nThis action cannot be undone.`
+        )
+      )
+        return;
+    }
+
+    try {
+      await deleteBin(binId);
+
+      // Refresh bins for the rack
+      const bins = await getBinsWithStatusByRack(rackId);
+      setRackBins((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(rackId, bins);
+        return newMap;
+      });
+
+      // Refresh racks to update bin count
+      const updatedRacks = await getRacksWithBinsByZone(zoneId);
+      setZoneRacks((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(zoneId, updatedRacks);
+        return newMap;
+      });
+
+      // Refresh zone statistics
+      fetchZones();
+    } catch (error) {
+      console.error("Failed to delete bin:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to delete bin";
+      setError(errorMessage);
     }
   };
 
@@ -308,11 +518,13 @@ export default function Zones() {
   const handleCloseRackModal = () => {
     setIsRackModalOpen(false);
     setRackFormData({ zoneId: "", name: "", description: "" });
+    setEditingRack(null);
   };
 
   const handleOpenBinModal = (rackId, zoneId) => {
     setBinFormData({
       rackId: rackId.toString(),
+      zoneId: zoneId.toString(), // Store zoneId in binFormData
       name: "",
       capacity: "",
     });
@@ -322,7 +534,8 @@ export default function Zones() {
 
   const handleCloseBinModal = () => {
     setIsBinModalOpen(false);
-    setBinFormData({ rackId: "", name: "", code: "", capacity: "" });
+    setBinFormData({ rackId: "", zoneId: "", name: "", capacity: "" });
+    setEditingBin(null);
   };
 
   const getOccupancyStatus = (percentage) => {
@@ -555,9 +768,44 @@ export default function Zones() {
                                           </span>
                                         )}
                                       </div>
-                                      <Badge variant="outline" className="ml-2">
-                                        {rack.binCount} bins
-                                      </Badge>
+                                      <div className="flex items-center gap-2">
+                                        <Badge
+                                          variant="outline"
+                                          className="ml-2"
+                                        >
+                                          {rack.binCount} bins
+                                        </Badge>
+                                        {canManageRacks && (
+                                          <>
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRackEdit(
+                                                  rack,
+                                                  zone.zoneId
+                                                );
+                                              }}
+                                            >
+                                              <Edit2 size={14} />
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="danger"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRackDelete(
+                                                  rack.id,
+                                                  zone.zoneId
+                                                );
+                                              }}
+                                            >
+                                              <Trash2 size={14} />
+                                            </Button>
+                                          </>
+                                        )}
+                                      </div>
                                     </div>
 
                                     {/* Expandable Bins Section */}
@@ -607,44 +855,101 @@ export default function Zones() {
                                           }
                                           return (
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                                              {bins.map((bin) => (
-                                                <div
-                                                  key={bin.id}
-                                                  className={`p-2 rounded border ${
-                                                    bin.isOccupied
-                                                      ? "border-orange-300 bg-orange-50"
-                                                      : "border-gray-200 bg-gray-50"
-                                                  }`}
-                                                >
-                                                  <div className="flex items-center justify-between">
-                                                    <div className="flex-1">
-                                                      <p className="font-medium text-sm text-gray-900">
-                                                        {bin.name || bin.code}
-                                                      </p>
-                                                      <p className="text-xs text-gray-500">
-                                                        Capacity: {bin.capacity}
-                                                      </p>
+                                              {bins.map((bin) => {
+                                                const isOccupied =
+                                                  bin.isOccupied === true;
+                                                return (
+                                                  <div
+                                                    key={bin.id}
+                                                    className={`p-2 rounded border ${
+                                                      isOccupied
+                                                        ? "border-orange-300 bg-orange-50"
+                                                        : "border-gray-200 bg-gray-50"
+                                                    }`}
+                                                  >
+                                                    <div className="flex items-center justify-between">
+                                                      <div className="flex-1">
+                                                        <p className="font-medium text-sm text-gray-900">
+                                                          {bin.name ||
+                                                            bin.code ||
+                                                            `Bin ${bin.id}`}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500">
+                                                          Capacity:{" "}
+                                                          {bin.capacity ||
+                                                            "N/A"}
+                                                        </p>
+                                                      </div>
+                                                      <div className="flex items-center gap-1">
+                                                        <Badge
+                                                          variant={
+                                                            isOccupied
+                                                              ? "orange"
+                                                              : "green"
+                                                          }
+                                                          className="ml-2"
+                                                        >
+                                                          {isOccupied
+                                                            ? "Occupied"
+                                                            : "Empty"}
+                                                        </Badge>
+                                                        {canManageRacks && (
+                                                          <>
+                                                            <Button
+                                                              size="sm"
+                                                              variant="outline"
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleBinEdit(
+                                                                  bin,
+                                                                  rack.id,
+                                                                  zone.zoneId
+                                                                );
+                                                              }}
+                                                              className="p-1 h-6 w-6"
+                                                            >
+                                                              <Edit2
+                                                                size={12}
+                                                              />
+                                                            </Button>
+                                                            <Button
+                                                              size="sm"
+                                                              variant="danger"
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const binName =
+                                                                  bin.name ||
+                                                                  bin.code ||
+                                                                  `Bin ${bin.id}`;
+                                                                handleBinDelete(
+                                                                  bin.id,
+                                                                  rack.id,
+                                                                  zone.zoneId,
+                                                                  binName,
+                                                                  isOccupied
+                                                                );
+                                                              }}
+                                                              className="p-1 h-6 w-6"
+                                                            >
+                                                              <Trash2
+                                                                size={12}
+                                                              />
+                                                            </Button>
+                                                          </>
+                                                        )}
+                                                      </div>
                                                     </div>
-                                                    <Badge
-                                                      variant={
-                                                        bin.isOccupied
-                                                          ? "orange"
-                                                          : "green"
-                                                      }
-                                                      className="ml-2"
-                                                    >
-                                                      {bin.isOccupied
-                                                        ? "Occupied"
-                                                        : "Empty"}
-                                                    </Badge>
+                                                    {isOccupied &&
+                                                      bin.currentQuantity !==
+                                                        undefined && (
+                                                        <p className="text-xs text-gray-600 mt-1">
+                                                          Qty:{" "}
+                                                          {bin.currentQuantity}
+                                                        </p>
+                                                      )}
                                                   </div>
-                                                  {bin.isOccupied && (
-                                                    <p className="text-xs text-gray-600 mt-1">
-                                                      Qty: {bin.currentQuantity}
-                                                    </p>
-                                                  )}
-                                                </div>
-                                              ))}
+                                                );
+                                              })}
                                             </div>
                                           );
                                         })()}
@@ -749,11 +1054,11 @@ export default function Zones() {
         </form>
       </Modal>
 
-      {/* Create Rack Modal */}
+      {/* Create/Edit Rack Modal */}
       <Modal
         isOpen={isRackModalOpen}
         onClose={handleCloseRackModal}
-        title="Create Rack"
+        title={editingRack ? "Edit Rack" : "Create Rack"}
       >
         <form onSubmit={handleRackCreate} className="space-y-4">
           <Input
@@ -790,7 +1095,12 @@ export default function Zones() {
           </div>
           <div className="flex gap-4">
             <Button type="submit" variant="primary" disabled={submitting}>
-              {submitting ? "Creating..." : "Create Rack"}
+              {(() => {
+                if (submitting) {
+                  return editingRack ? "Updating..." : "Creating...";
+                }
+                return editingRack ? "Update Rack" : "Create Rack";
+              })()}
             </Button>
             <Button
               type="button"
@@ -803,11 +1113,11 @@ export default function Zones() {
         </form>
       </Modal>
 
-      {/* Create Bin Modal */}
+      {/* Create/Edit Bin Modal */}
       <Modal
         isOpen={isBinModalOpen}
         onClose={handleCloseBinModal}
-        title="Create Bin"
+        title={editingBin ? "Edit Bin" : "Create Bin"}
       >
         <form onSubmit={handleBinCreate} className="space-y-4">
           <Input
@@ -834,7 +1144,12 @@ export default function Zones() {
           />
           <div className="flex gap-4">
             <Button type="submit" variant="primary" disabled={submitting}>
-              {submitting ? "Creating..." : "Create Bin"}
+              {(() => {
+                if (submitting) {
+                  return editingBin ? "Updating..." : "Creating...";
+                }
+                return editingBin ? "Update Bin" : "Create Bin";
+              })()}
             </Button>
             <Button
               type="button"

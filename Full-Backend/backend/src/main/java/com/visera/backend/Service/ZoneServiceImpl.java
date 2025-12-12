@@ -1,16 +1,17 @@
 package com.visera.backend.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
 import com.visera.backend.DTOs.ZoneStatisticsDTO;
 import com.visera.backend.DTOs.ZoneUpdateDTO;
 import com.visera.backend.Entity.Zone;
-import com.visera.backend.Repository.ZoneRepository;
-import com.visera.backend.Repository.RackRepository;
 import com.visera.backend.Repository.BinRepository;
 import com.visera.backend.Repository.InventoryStockRepository;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
+import com.visera.backend.Repository.RackRepository;
+import com.visera.backend.Repository.ZoneRepository;
 
 @Service
 public class ZoneServiceImpl implements ZoneService {
@@ -61,6 +62,37 @@ public class ZoneServiceImpl implements ZoneService {
 
     @Override
     public void deleteZone(Long zoneId) {
+        // Verify zone exists
+        zoneRepo.findById(zoneId)
+                .orElseThrow(() -> new RuntimeException("Zone not found with id: " + zoneId));
+        
+        // Get all racks for this zone
+        List<com.visera.backend.Entity.Rack> racks = rackRepo.findByZoneId(zoneId);
+        
+        // For each rack, delete all bins and their inventory stock
+        for (com.visera.backend.Entity.Rack rack : racks) {
+            List<com.visera.backend.Entity.Bin> bins = binRepo.findByRackId(rack.getId());
+            
+            // Delete inventory stock for all bins in this rack
+            for (com.visera.backend.Entity.Bin bin : bins) {
+                List<com.visera.backend.Entity.InventoryStock> stocks = inventoryStockRepo.findByBinId(bin.getId());
+                if (!stocks.isEmpty()) {
+                    inventoryStockRepo.deleteAll(stocks);
+                }
+            }
+            
+            // Delete all bins in this rack
+            if (!bins.isEmpty()) {
+                binRepo.deleteAll(bins);
+            }
+        }
+        
+        // Delete all racks in this zone
+        if (!racks.isEmpty()) {
+            rackRepo.deleteAll(racks);
+        }
+        
+        // Finally, delete the zone
         zoneRepo.deleteById(zoneId);
     }
 

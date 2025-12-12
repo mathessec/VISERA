@@ -1,6 +1,7 @@
 package com.visera.backend.Controller;
 
 import com.visera.backend.DTOs.RackCreateDTO;
+import com.visera.backend.DTOs.RackUpdateDTO;
 import com.visera.backend.DTOs.RackWithBinsDTO;
 import com.visera.backend.Entity.Rack;
 import com.visera.backend.Service.RackService;
@@ -38,5 +39,19 @@ public class RackController {
     @GetMapping("/zone/{zoneId}/with-bins")
     public ResponseEntity<List<RackWithBinsDTO>> getRacksWithBinsByZone(@PathVariable Long zoneId) {
         return ResponseEntity.ok(rackService.getRacksWithBinsByZone(zoneId));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @PutMapping("/update/{rackId}")
+    public ResponseEntity<Rack> updateRack(@PathVariable Long rackId, @Valid @RequestBody RackUpdateDTO rackUpdateDTO) {
+        Rack updated = rackService.updateRack(rackId, rackUpdateDTO);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @DeleteMapping("/delete/{rackId}")
+    public ResponseEntity<Void> deleteRack(@PathVariable Long rackId) {
+        rackService.deleteRack(rackId);
+        return ResponseEntity.noContent().build();
     }
 }

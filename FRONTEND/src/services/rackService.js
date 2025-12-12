@@ -18,3 +18,16 @@ export const createRack = async (rackData) => {
   });
   return response.data;
 };
+
+export const updateRack = async (rackId, rackData) => {
+  const response = await api.put(`/api/racks/update/${rackId}`, {
+    name: rackData.name,
+    description: rackData.description || "",
+  });
+  return response.data;
+};
+
+export const deleteRack = async (rackId) => {
+  const response = await api.delete(`/api/racks/delete/${rackId}`);
+  return response.data;
+};

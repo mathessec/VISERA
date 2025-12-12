@@ -13,6 +13,8 @@ public interface InventoryStockRepository extends JpaRepository<InventoryStock, 
     List<InventoryStock> findBySkuId(Long skuId);
 
     List<InventoryStock> findByBinId(Long binId);
+    
+    List<InventoryStock> findByBinIdIn(List<Long> binIds);
 
     Optional<InventoryStock> findBySkuIdAndBinId(Long skuId, Long binId);
     

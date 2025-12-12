@@ -18,6 +18,9 @@ public class EntityMapper {
 
     @Autowired
     private ShipmentItemRepository shipmentItemRepository;
+    
+    @Autowired
+    private com.visera.backend.Repository.ApprovalRepository approvalRepository;
 
     public ShipmentDTO toShipmentDTO(Shipment shipment) {
         ShipmentDTO dto = new ShipmentDTO();
@@ -85,11 +88,82 @@ public class EntityMapper {
 
     public VerificationDTO toVerificationDTO(VerificationLog log) {
         VerificationDTO dto = new VerificationDTO();
-        dto.setShipmentItemId(log.getShipmentItem().getId());
+        
+        // Log identification
+        dto.setId(log.getId());
+        dto.setTimestamp(log.getVerifiedAt());
+        
+        // Employee information
+        User employee = log.getVerifiedBy();
+        if (employee != null) {
+            dto.setEmployeeId(employee.getId());
+            dto.setEmployeeName(employee.getName());
+            dto.setEmployeeEmail(employee.getEmail());
+        }
+        
+        // Shipment item and related entities
+        ShipmentItem shipmentItem = log.getShipmentItem();
+        dto.setShipmentItemId(shipmentItem.getId());
+        
+        // Operation type from shipment
+        Shipment shipment = shipmentItem.getShipment();
+        String operation = shipment.getShipmentType(); // INBOUND or OUTBOUND
+        dto.setOperation(operation);
+        
+        // SKU information
+        Sku sku = shipmentItem.getSku();
+        if (sku != null) {
+            dto.setSkuId(sku.getId());
+            dto.setSkuCode(sku.getSkuCode());
+            
+            // Product information
+            Product product = sku.getProduct();
+            if (product != null) {
+                dto.setProductId(product.getId());
+                dto.setProductName(product.getName());
+                dto.setProductCode(product.getProductCode());
+            }
+        }
+        
+        // Verification data
         dto.setExtractedSku(log.getExtractedSku());
         dto.setExpectedSku(log.getExpectedSku());
+        dto.setExtractedProductCode(log.getExtractedProductCode());
+        dto.setExpectedProductCode(log.getExpectedProductCode());
+        dto.setExtractedWeight(log.getExtractedWeight());
+        dto.setExpectedWeight(log.getExpectedWeight());
+        dto.setExtractedColor(log.getExtractedColor());
+        dto.setExpectedColor(log.getExpectedColor());
+        dto.setExtractedDimensions(log.getExtractedDimensions());
+        dto.setExpectedDimensions(log.getExpectedDimensions());
+        
+        // AI results
         dto.setAiConfidence(log.getAiConfidence());
         dto.setResult(log.getResult());
+        
+        // Determine status from approval
+        List<Approval> approvals = approvalRepository.findByShipmentItemId(shipmentItem.getId());
+        if (approvals != null && !approvals.isEmpty()) {
+            Approval approval = approvals.get(0); // Get the most recent approval
+            dto.setApprovalId(approval.getId());
+            
+            String approvalStatus = approval.getStatus();
+            if ("PENDING".equals(approvalStatus)) {
+                dto.setStatus("PENDING");
+            } else if ("APPROVED".equals(approvalStatus)) {
+                dto.setStatus("SUPERVISOR_APPROVED");
+            } else if ("REJECTED".equals(approvalStatus)) {
+                dto.setStatus("REJECTED");
+            }
+        } else {
+            // No approval exists
+            if ("MATCH".equals(log.getResult())) {
+                dto.setStatus("AUTO_APPROVED");
+            } else {
+                dto.setStatus("PENDING");
+            }
+        }
+        
         return dto;
     }
 
