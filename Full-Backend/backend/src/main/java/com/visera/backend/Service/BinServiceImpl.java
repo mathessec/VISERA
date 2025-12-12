@@ -1,5 +1,11 @@
 package com.visera.backend.Service;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
 import com.visera.backend.DTOs.BinCreateDTO;
 import com.visera.backend.DTOs.BinUpdateDTO;
 import com.visera.backend.DTOs.BinWithStatusDTO;
@@ -9,11 +15,6 @@ import com.visera.backend.Entity.Rack;
 import com.visera.backend.Repository.BinRepository;
 import com.visera.backend.Repository.InventoryStockRepository;
 import com.visera.backend.Repository.RackRepository;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class BinServiceImpl implements BinService {

@@ -1,19 +1,20 @@
-import { Package, Search } from "lucide-react";
+import { Package, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Alert from "../../components/common/Alert";
-import Badge from "../../components/common/Badge";
 import Button from "../../components/common/Button";
 import Card from "../../components/common/Card";
+import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
 import Select from "../../components/common/Select";
 import { getBinsByRack } from "../../services/binService";
-import { getStock } from "../../services/inventoryService";
+import { getAllInventory, updateStock } from "../../services/inventoryService";
 import { getRacksByZone } from "../../services/rackService";
 import { getAllSkus } from "../../services/skuService";
 import { getAllZones } from "../../services/zoneService";
 
 export default function InventoryStock() {
-  const [stock, setStock] = useState(null);
+  const navigate = useNavigate();
   const [skus, setSkus] = useState([]);
   const [zones, setZones] = useState([]);
   const [racks, setRacks] = useState([]);
@@ -22,9 +23,11 @@ export default function InventoryStock() {
   const [selectedZone, setSelectedZone] = useState("");
   const [selectedRack, setSelectedRack] = useState("");
   const [selectedBin, setSelectedBin] = useState("");
+  const [quantity, setQuantity] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     fetchInitialData();
@@ -90,20 +93,66 @@ export default function InventoryStock() {
     }
   };
 
-  const handleSearch = async () => {
+  const handleAddStock = async () => {
+    // Validation
     if (!selectedSku || !selectedBin) {
       setError("Please select both SKU and Bin");
+      setSuccess("");
+      return;
+    }
+
+    if (!quantity || quantity.trim() === "") {
+      setError("Please enter a quantity");
+      setSuccess("");
+      return;
+    }
+
+    const qty = parseInt(quantity);
+    if (isNaN(qty) || qty <= 0) {
+      setError("Quantity must be a positive number");
+      setSuccess("");
       return;
     }
 
     setLoading(true);
     setError("");
+    setSuccess("");
     try {
-      const data = await getStock(parseInt(selectedSku), parseInt(selectedBin));
-      setStock(data);
+      // Use updateStock which performs upsert (creates if doesn't exist, updates if exists)
+      const result = await updateStock(
+        parseInt(selectedSku),
+        parseInt(selectedBin),
+        qty
+      );
+
+      // Get the stock ID from the result
+      let stockId = result?.id;
+
+      // If result doesn't have ID, fetch all inventory to find the newly created/updated stock
+      if (!stockId) {
+        const allInventory = await getAllInventory();
+        const foundStock = allInventory.find(
+          (item) =>
+            item.skuId === parseInt(selectedSku) &&
+            item.binId === parseInt(selectedBin)
+        );
+        stockId = foundStock?.id;
+      }
+
+      // Navigate to stock detail page if we have an ID
+      if (stockId) {
+        navigate(`/inventory/view/${stockId}`);
+      } else {
+        // Fallback: navigate to inventory management if we can't find the ID
+        setSuccess("Stock entry created/updated successfully!");
+        setTimeout(() => {
+          navigate("/inventory/stock", { state: { fromAddStock: true } });
+        }, 1500);
+      }
     } catch (err) {
-      setError("Stock not found for this SKU and Bin combination");
-      setStock(null);
+      setError(
+        err.response?.data?.message || "Failed to add/update stock entry"
+      );
     } finally {
       setLoading(false);
     }
@@ -114,13 +163,21 @@ export default function InventoryStock() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Inventory Stock</h1>
-        <p className="text-gray-600 mt-1">View stock levels by SKU and Bin</p>
+        <h1 className="text-2xl font-bold text-gray-900">Add Stock Entry</h1>
+        <p className="text-gray-600 mt-1">
+          Create or update inventory stock entries
+        </p>
       </div>
 
       {error && (
         <Alert variant="error" onClose={() => setError("")}>
           {error}
+        </Alert>
+      )}
+
+      {success && (
+        <Alert variant="success" onClose={() => setSuccess("")}>
+          {success}
         </Alert>
       )}
 
@@ -186,64 +243,41 @@ export default function InventoryStock() {
             </div>
           </div>
 
+          <div>
+            <Input
+              label="Quantity"
+              type="number"
+              min="1"
+              value={quantity}
+              onChange={(e) => {
+                setQuantity(e.target.value);
+                setError("");
+              }}
+              placeholder="Enter quantity"
+              required
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Enter the quantity of stock to add or update for this SKU in the
+              selected bin location.
+            </p>
+          </div>
+
           <Button
             variant="primary"
-            onClick={handleSearch}
-            disabled={loading || !selectedSku || !selectedBin}
+            onClick={handleAddStock}
+            disabled={loading || !selectedSku || !selectedBin || !quantity}
           >
-            <Search size={20} className="mr-2" />
-            {loading ? "Searching..." : "Search Stock"}
+            <Plus size={20} className="mr-2" />
+            {loading ? "Adding..." : "Add/Update Stock Entry"}
           </Button>
         </div>
       </Card>
 
-      {stock && (
-        <Card>
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Stock Information
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-500">
-                  SKU ID
-                </label>
-                <p className="text-gray-900 font-semibold">#{stock.skuId}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">
-                  Bin ID
-                </label>
-                <p className="text-gray-900 font-semibold">#{stock.binId}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">
-                  Quantity
-                </label>
-                <p className="text-gray-900 font-semibold text-2xl">
-                  {stock.quantity || 0}
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">
-                  Status
-                </label>
-                <div className="mt-1">
-                  <Badge variant={stock.quantity > 0 ? "green" : "red"}>
-                    {stock.quantity > 0 ? "In Stock" : "Out of Stock"}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {!stock && !loading && (
+      {!loading && success === "" && (
         <Card>
           <div className="text-center py-8 text-gray-500">
             <Package size={48} className="mx-auto mb-4 text-gray-400" />
-            <p>Select SKU and Bin to view stock information</p>
+            <p>Select SKU, location, and enter quantity to add stock entry</p>
           </div>
         </Card>
       )}

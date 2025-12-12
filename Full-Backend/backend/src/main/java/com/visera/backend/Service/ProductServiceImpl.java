@@ -5,10 +5,14 @@ import com.visera.backend.Entity.Product;
 import com.visera.backend.Entity.Sku;
 import com.visera.backend.Entity.ShipmentItem;
 import com.visera.backend.Entity.VerificationLog;
+import com.visera.backend.Entity.Task;
+import com.visera.backend.Entity.Approval;
 import com.visera.backend.Repository.ProductRepository;
 import com.visera.backend.Repository.SkuRepository;
 import com.visera.backend.Repository.ShipmentItemRepository;
 import com.visera.backend.Repository.VerificationLogRepository;
+import com.visera.backend.Repository.TaskRepository;
+import com.visera.backend.Repository.ApprovalRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,14 +26,20 @@ public class ProductServiceImpl implements ProductService {
     private final SkuRepository skuRepository;
     private final ShipmentItemRepository shipmentItemRepository;
     private final VerificationLogRepository verificationLogRepository;
+    private final TaskRepository taskRepository;
+    private final ApprovalRepository approvalRepository;
 
     public ProductServiceImpl(ProductRepository repo, SkuRepository skuRepository, 
                             ShipmentItemRepository shipmentItemRepository,
-                            VerificationLogRepository verificationLogRepository) {
+                            VerificationLogRepository verificationLogRepository,
+                            TaskRepository taskRepository,
+                            ApprovalRepository approvalRepository) {
         this.repo = repo;
         this.skuRepository = skuRepository;
         this.shipmentItemRepository = shipmentItemRepository;
         this.verificationLogRepository = verificationLogRepository;
+        this.taskRepository = taskRepository;
+        this.approvalRepository = approvalRepository;
     }
 
     @Override
@@ -85,24 +95,40 @@ public class ProductServiceImpl implements ProductService {
                         .map(ShipmentItem::getId)
                         .collect(Collectors.toList());
                 
-                // Step 5: Find all VerificationLogs for those ShipmentItems
+                // Step 5: Delete all Tasks for those ShipmentItems
+                for (Long shipmentItemId : shipmentItemIds) {
+                    List<Task> tasks = taskRepository.findByShipmentItemId(shipmentItemId);
+                    if (!tasks.isEmpty()) {
+                        taskRepository.deleteAll(tasks);
+                    }
+                }
+                
+                // Step 6: Delete all Approvals for those ShipmentItems
+                for (Long shipmentItemId : shipmentItemIds) {
+                    List<Approval> approvals = approvalRepository.findByShipmentItemId(shipmentItemId);
+                    if (!approvals.isEmpty()) {
+                        approvalRepository.deleteAll(approvals);
+                    }
+                }
+                
+                // Step 7: Find all VerificationLogs for those ShipmentItems
                 List<VerificationLog> verificationLogs = verificationLogRepository.findByShipmentItemIdIn(shipmentItemIds);
                 
-                // Step 6: Delete VerificationLogs first
+                // Step 8: Delete VerificationLogs
                 if (!verificationLogs.isEmpty()) {
                     verificationLogRepository.deleteAll(verificationLogs);
                 }
                 
-                // Step 7: Delete ShipmentItems second
+                // Step 9: Delete ShipmentItems
                 shipmentItemRepository.deleteAll(shipmentItems);
             }
             
-            // Step 8: Delete SKUs third (this will cascade delete their inventory stocks)
+            // Step 10: Delete SKUs (this will cascade delete their inventory stocks)
             // because Sku entity has @OneToMany with cascade = CascadeType.ALL for InventoryStock
             skuRepository.deleteAll(skus);
         }
         
-        // Step 9: Delete the product last
+        // Step 11: Delete the product last
         repo.deleteById(id);
     }
 
