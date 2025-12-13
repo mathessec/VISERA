@@ -16,3 +16,5 @@ public class VerificationSummaryDTO {
     private double averageConfidence;
 }
 
+
+

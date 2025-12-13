@@ -1,7 +1,7 @@
-import api from './api';
+import api from "./api";
 
 export const getPendingApprovals = async () => {
-  const response = await api.get('/api/approvals/pending');
+  const response = await api.get("/api/approvals/pending");
   return response.data;
 };
 
@@ -11,7 +11,9 @@ export const approveRequest = async (approvalId) => {
 };
 
 export const rejectRequest = async (approvalId, reason) => {
-  const response = await api.post(`/api/approvals/${approvalId}/reject`, { reason });
+  const response = await api.post(`/api/approvals/${approvalId}/reject`, {
+    reason,
+  });
   return response.data;
 };
 

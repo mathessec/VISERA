@@ -9,3 +9,5 @@ public class BinUpdateDTO {
     private Integer capacity;
 }
 
+
+

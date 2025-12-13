@@ -21,16 +21,17 @@ import Workers from "../pages/supervisor/Workers";
 
 // Worker pages
 import Inbound from "../pages/worker/Inbound";
-import Outbound from "../pages/worker/Outbound";
 import Issues from "../pages/worker/Issues";
+import Outbound from "../pages/worker/Outbound";
 import Picking from "../pages/worker/Picking";
 import Putaway from "../pages/worker/Putaway";
 import WorkerTasks from "../pages/worker/Tasks";
 import WorkerDashboard from "../pages/worker/WorkerDashboard";
 
 // Shared pages
-import InventoryStock from "../pages/inventory/InventoryStock";
 import InventoryManagement from "../pages/inventory/InventoryManagement";
+import InventoryStock from "../pages/inventory/InventoryStock";
+import StockDetail from "../pages/inventory/StockDetail";
 import Notifications from "../pages/notifications/Notifications";
 import ProductCreate from "../pages/products/ProductCreate";
 import ProductDetail from "../pages/products/ProductDetail";
@@ -408,6 +409,16 @@ export default function AppRoutes() {
             <ProtectedRoute allowedRoles={["ADMIN", "SUPERVISOR", "WORKER"]}>
               <Layout>
                 <InventoryStock />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inventory/view/:id"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN", "SUPERVISOR", "WORKER"]}>
+              <Layout>
+                <StockDetail />
               </Layout>
             </ProtectedRoute>
           }
