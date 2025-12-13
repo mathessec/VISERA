@@ -10,7 +10,8 @@ public interface VerificationLogRepository extends JpaRepository<VerificationLog
     List<VerificationLog> findByShipmentItemId(int shipmentItemId);
 
     List<VerificationLog> findByVerifiedBy(int userId);
-    
-    List<VerificationLog> findByShipmentItemIdIn(List<Long> shipmentItemIds);
-}
 
+    List<VerificationLog> findByShipmentItemIdIn(List<Long> shipmentItemIds);
+
+    long countByResult(String result);
+}

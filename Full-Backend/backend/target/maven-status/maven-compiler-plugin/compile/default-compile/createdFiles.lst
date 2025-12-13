@@ -56,6 +56,7 @@ com\visera\backend\security\JwtFilter.class
 com\visera\backend\DTOs\ShipmentDTO.class
 com\visera\backend\security\SecurityConfig.class
 com\visera\backend\Entity\Notification$NotificationBuilder.class
+com\visera\backend\DTOs\ReportDTO$MonthlyShipmentData$MonthlyShipmentDataBuilder.class
 com\visera\backend\Repository\ShipmentItemRepository.class
 com\visera\backend\security\PasswordConfig.class
 com\visera\backend\Entity\Bin$BinBuilder.class
@@ -65,6 +66,7 @@ com\visera\backend\security\SecurityConfig$1.class
 com\visera\backend\Controller\NotificationController.class
 com\visera\backend\Service\InboundVerificationService.class
 com\visera\backend\DTOs\OCRVerificationResult$ExtractedData$ExtractedDataBuilder.class
+com\visera\backend\DTOs\ReportDTO$ReportDTOBuilder.class
 com\visera\backend\security\JwtUtil.class
 com\visera\backend\Service\ShipmentItemServiceImpl.class
 com\visera\backend\Service\InventoryStockService.class
@@ -79,6 +81,7 @@ com\visera\backend\Service\RackService.class
 com\visera\backend\Service\ProductService.class
 com\visera\backend\Service\TaskService.class
 com\visera\backend\Service\ZoneServiceImpl.class
+com\visera\backend\DTOs\ReportDTO$MonthlyShipmentData.class
 com\visera\backend\Controller\ShipmentItemController.class
 com\visera\backend\DTOs\BinCreateDTO.class
 com\visera\backend\Controller\TaskController.class
@@ -103,6 +106,7 @@ com\visera\backend\Entity\InventoryStock.class
 com\visera\backend\Entity\Notification.class
 com\visera\backend\Service\InventoryStockServiceImpl.class
 com\visera\backend\DTOs\RackCreateDTO.class
+com\visera\backend\DTOs\ReportDTO.class
 com\visera\backend\Service\TaskServiceImpl.class
 com\visera\backend\Controller\SkuController.class
 com\visera\backend\security\CustomUserDetails.class
@@ -132,6 +136,8 @@ com\visera\backend\Service\UserServiceImpl.class
 com\visera\backend\Service\ZoneService.class
 com\visera\backend\Service\ShipmentServiceImpl.class
 com\visera\backend\Service\SkuServiceImpl.class
+com\visera\backend\DTOs\ReportDTO$RoleDistribution$RoleDistributionBuilder.class
+com\visera\backend\DTOs\ReportDTO$RoleDistribution.class
 com\visera\backend\Controller\VerificationLogController.class
 com\visera\backend\Service\RackServiceImpl.class
 com\visera\backend\Service\ProductServiceImpl.class
