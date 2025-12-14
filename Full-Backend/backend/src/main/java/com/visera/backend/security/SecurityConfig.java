@@ -30,13 +30,14 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> {}) // use @Bean WebMvcConfigurer below
+                .cors(cors -> {}) // uses WebMvcConfigurer below
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/api/agentic/**",   // ✅ ADD THIS LINE
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**"
                         ).permitAll()
@@ -49,7 +50,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Simple CORS config so React frontend can talk to backend
+    // CORS config for React / Postman
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {

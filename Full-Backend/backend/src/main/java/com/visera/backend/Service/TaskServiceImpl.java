@@ -31,4 +31,9 @@ public class TaskServiceImpl implements TaskService {
             return repo.save(task);
         }).orElse(null);
     }
+    @Override
+    public long countTasksByWorker(Long workerId) {
+        return repo.findByUserId(workerId).size();
+    }
+
 }
