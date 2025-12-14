@@ -107,6 +107,7 @@ com\visera\backend\Entity\Notification.class
 com\visera\backend\Service\InventoryStockServiceImpl.class
 com\visera\backend\DTOs\RackCreateDTO.class
 com\visera\backend\DTOs\ReportDTO.class
+com\visera\backend\Controller\ReportController.class
 com\visera\backend\Service\TaskServiceImpl.class
 com\visera\backend\Controller\SkuController.class
 com\visera\backend\security\CustomUserDetails.class

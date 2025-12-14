@@ -76,7 +76,7 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
                 image,
                 product.getProductCode(),
                 sku.getSkuCode(),
-                sku.getWeight() != null ? sku.getWeight().toString() : null,
+                sku.getWeight(),
                 sku.getColor(),
                 sku.getDimensions()
             );
@@ -110,21 +110,27 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
     ) {
         OCRVerificationResult.ExtractedData data = ocrResult.getData();
         
+        // Ensure result is never null - default to MISMATCH if OCR result is null or empty
+        String result = ocrResult.getVerificationResult();
+        if (result == null || result.isEmpty()) {
+            result = "MISMATCH"; // Treat null/empty as mismatch for reporting purposes
+        }
+        
         return VerificationLog.builder()
             .shipmentItem(shipmentItem)
             .verifiedBy(worker)
-            .extractedSku(data.getSku())
+            .extractedSku(data != null ? data.getSku() : null)
             .expectedSku(sku.getSkuCode())
-            .extractedProductCode(data.getProductCode())
+            .extractedProductCode(data != null ? data.getProductCode() : null)
             .expectedProductCode(product.getProductCode())
-            .extractedWeight(data.getWeight())
-            .expectedWeight(sku.getWeight() != null ? sku.getWeight().toString() : null)
-            .extractedColor(data.getColor())
+            .extractedWeight(data != null ? data.getWeight() : null)
+            .expectedWeight(sku.getWeight())
+            .extractedColor(data != null ? data.getColor() : null)
             .expectedColor(sku.getColor())
-            .extractedDimensions(data.getDimensions())
+            .extractedDimensions(data != null ? data.getDimensions() : null)
             .expectedDimensions(sku.getDimensions())
-            .aiConfidence(data.getConfidenceScore())
-            .result(ocrResult.getVerificationResult())
+            .aiConfidence(data != null ? data.getConfidenceScore() : null)
+            .result(result)
             .build();
     }
 
@@ -184,7 +190,7 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
             Map<String, String> expectedData = new HashMap<>();
             expectedData.put("productCode", product.getProductCode());
             expectedData.put("skuCode", sku.getSkuCode());
-            expectedData.put("weight", sku.getWeight() != null ? sku.getWeight().toString() : null);
+            expectedData.put("weight", sku.getWeight());
             expectedData.put("color", sku.getColor());
             expectedData.put("dimensions", sku.getDimensions());
             
@@ -238,7 +244,7 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
                 .extractedSku(data.getSku())
                 .expectedSku(sku.getSkuCode())
                 .extractedWeight(data.getWeight())
-                .expectedWeight(sku.getWeight() != null ? sku.getWeight().toString() : null)
+                .expectedWeight(sku.getWeight())
                 .extractedColor(data.getColor())
                 .expectedColor(sku.getColor())
                 .extractedDimensions(data.getDimensions())
@@ -270,7 +276,7 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
                 .extractedSku(data.getSku())
                 .expectedSku(sku.getSkuCode())
                 .extractedWeight(data.getWeight())
-                .expectedWeight(sku.getWeight() != null ? sku.getWeight().toString() : null)
+                .expectedWeight(sku.getWeight())
                 .extractedColor(data.getColor())
                 .expectedColor(sku.getColor())
                 .extractedDimensions(data.getDimensions())

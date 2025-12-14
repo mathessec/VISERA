@@ -32,7 +32,8 @@ public class Sku {
     @NotBlank(message = "SKU code must not be blank")
     private String skuCode;
 
-    private Double weight;
+    @Column(nullable = true, length = 50)
+    private String weight;
     private String dimensions;
     private String color;
     

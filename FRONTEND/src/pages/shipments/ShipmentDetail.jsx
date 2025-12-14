@@ -15,7 +15,7 @@ import Table, {
   TableRow,
 } from '../../components/common/Table';
 import Alert from '../../components/common/Alert';
-import { getShipmentById } from '../../services/shipmentService';
+import { getShipmentById, getAllShipments } from '../../services/shipmentService';
 import { getAssignedWorkers, assignWorkers, removeWorker } from '../../services/shipmentService';
 import { getItemsByShipment } from '../../services/shipmentItemService';
 import { getAllUsers } from '../../services/userService';
@@ -42,19 +42,80 @@ export default function ShipmentDetail() {
 
   const fetchShipment = async () => {
     try {
-      const [shipmentData, packagesData, workersData, usersData] = await Promise.all([
+      setLoading(true);
+      setError('');
+      
+      // Use Promise.allSettled to handle getAllUsers() failure gracefully (requires ADMIN role)
+      const [shipmentResult, packagesResult, workersResult, usersResult, shipmentsResult] = await Promise.allSettled([
         getShipmentById(id),
         getItemsByShipment(id),
         getAssignedWorkers(id),
-        getAllUsers(),
+        getAllUsers(), // May fail for supervisors (requires ADMIN role)
+        getAllShipments(), // Fetch all shipments to extract workers as fallback
       ]);
+
+      // Check if critical requests failed
+      if (shipmentResult.status === 'rejected') {
+        throw shipmentResult.reason;
+      }
+      if (packagesResult.status === 'rejected') {
+        console.error('Error fetching packages:', packagesResult.reason);
+      }
+      if (workersResult.status === 'rejected') {
+        console.error('Error fetching assigned workers:', workersResult.reason);
+      }
+      if (usersResult.status === 'rejected') {
+        console.warn('Could not fetch users (may require ADMIN role):', usersResult.reason);
+      }
+      if (shipmentsResult.status === 'rejected') {
+        console.warn('Could not fetch all shipments:', shipmentsResult.reason);
+      }
+
+      // Extract successful results
+      const shipmentData = shipmentResult.value;
+      const packagesData = packagesResult.status === 'fulfilled' ? packagesResult.value : [];
+      const workersData = workersResult.status === 'fulfilled' ? workersResult.value : [];
+      const usersData = usersResult.status === 'fulfilled' ? usersResult.value : [];
+      const allShipments = shipmentsResult.status === 'fulfilled' ? shipmentsResult.value : [];
+
       setShipment(shipmentData);
       setPackages(packagesData);
       setAssignedWorkers(workersData);
-      setAllWorkers(usersData.filter((u) => u.role === 'WORKER'));
+      
+      // Extract workers from users if available, otherwise extract from shipments
+      if (usersData.length > 0) {
+        setAllWorkers(usersData.filter((u) => u.role === 'WORKER'));
+      } else {
+        // Fallback: extract workers from all shipments
+        const workerMap = new Map();
+        
+        // Add assigned workers from current shipment
+        workersData.forEach((worker) => {
+          if (worker.role === 'WORKER') {
+            workerMap.set(worker.id, worker);
+          }
+        });
+        
+        // Extract workers from all shipments
+        allShipments.forEach((shipment) => {
+          if (shipment.assignedWorkers && Array.isArray(shipment.assignedWorkers)) {
+            shipment.assignedWorkers.forEach((worker) => {
+              if (worker.role === 'WORKER' && !workerMap.has(worker.id)) {
+                workerMap.set(worker.id, worker);
+              }
+            });
+          }
+        });
+        
+        setAllWorkers(Array.from(workerMap.values()));
+      }
     } catch (err) {
       console.error('Error fetching shipment:', err);
-      setError('Failed to load shipment details');
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          err.message || 
+                          'Failed to load shipment details';
+      setError(errorMessage === 'Access Denied' ? 'Access Denied: Failed to load shipment details' : errorMessage);
     } finally {
       setLoading(false);
     }

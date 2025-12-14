@@ -18,14 +18,14 @@ export default function Reports() {
   });
 
   useEffect(() => {
-    fetchAnalytics();
+    fetchAnalytics(dateRange.start, dateRange.end);
   }, []);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = async (startDate = null, endDate = null) => {
     try {
       setLoading(true);
       setError('');
-      const data = await getAnalytics();
+      const data = await getAnalytics(startDate || null, endDate || null);
       setAnalytics(data);
     } catch (err) {
       console.error('Error fetching analytics:', err);
@@ -33,6 +33,21 @@ export default function Reports() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleApplyFilter = () => {
+    if (dateRange.start && dateRange.end) {
+      if (new Date(dateRange.start) > new Date(dateRange.end)) {
+        setError('Start date must be before end date');
+        return;
+      }
+    }
+    fetchAnalytics(dateRange.start, dateRange.end);
+  };
+
+  const handleClearFilter = () => {
+    setDateRange({ start: '', end: '' });
+    fetchAnalytics(null, null);
   };
 
   const handleExport = () => {
@@ -72,23 +87,48 @@ export default function Reports() {
       {/* Date Range Filter */}
       <Card>
         <CardHeader>
-          <CardTitle>Date Range</CardTitle>
+          <CardTitle>Date Range Filter</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Start Date"
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-            />
-            <Input
-              label="End Date"
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div className="md:col-span-1">
+              <Input
+                label="Start Date"
+                type="date"
+                value={dateRange.start}
+                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-1">
+              <Input
+                label="End Date"
+                type="date"
+                value={dateRange.end}
+                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2 flex gap-2">
+              <Button 
+                variant="primary" 
+                onClick={handleApplyFilter}
+                disabled={loading || (!dateRange.start || !dateRange.end)}
+              >
+                Apply Filter
+              </Button>
+              <Button 
+                variant="secondary" 
+                onClick={handleClearFilter}
+                disabled={loading || (!dateRange.start && !dateRange.end)}
+              >
+                Clear Filter
+              </Button>
+            </div>
           </div>
+          {(!dateRange.start || !dateRange.end) && (
+            <p className="text-sm text-gray-500 mt-2">
+              Showing default data (last 6 months). Select a date range to filter.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -107,14 +147,18 @@ export default function Reports() {
               <CardContent className="pt-6">
                 <div className="text-sm font-medium text-gray-500">Total Shipments</div>
                 <div className="text-3xl font-bold text-gray-900 mt-2">{analytics.totalShipments}</div>
-                <div className="text-sm text-blue-600 mt-1">All time</div>
+                <div className="text-sm text-blue-600 mt-1">
+                  {dateRange.start && dateRange.end ? 'Filtered range' : 'All time'}
+                </div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
                 <div className="text-sm font-medium text-gray-500">AI Mismatches</div>
                 <div className="text-3xl font-bold text-gray-900 mt-2">{analytics.totalMismatches}</div>
-                <div className="text-sm text-orange-600 mt-1">Requires attention</div>
+                <div className="text-sm text-orange-600 mt-1">
+                  {dateRange.start && dateRange.end ? 'Filtered range' : 'All time'}
+                </div>
               </CardContent>
             </Card>
             <Card>
@@ -130,20 +174,31 @@ export default function Reports() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Shipment Trends (Last 6 Months)</CardTitle>
+                <CardTitle>
+                  Shipment Trends
+                  {dateRange.start && dateRange.end 
+                    ? ` (${new Date(dateRange.start).toLocaleDateString()} - ${new Date(dateRange.end).toLocaleDateString()})`
+                    : ' (Last 6 Months)'}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={analytics.shipmentTrends}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="inbound" fill="#2563EB" name="Inbound" />
-                    <Bar dataKey="outbound" fill="#10B981" name="Outbound" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {analytics.shipmentTrends && analytics.shipmentTrends.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={analytics.shipmentTrends}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="inbound" fill="#2563EB" name="Inbound" />
+                      <Bar dataKey="outbound" fill="#10B981" name="Outbound" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px] text-gray-500">
+                    No data available for the selected date range
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -152,17 +207,23 @@ export default function Reports() {
                 <CardTitle>Monthly Inbound vs Outbound</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={analytics.shipmentTrends}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="inbound" stroke="#14B8A6" name="Inbound" strokeWidth={2} />
-                    <Line type="monotone" dataKey="outbound" stroke="#8B5CF6" name="Outbound" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
+                {analytics.shipmentTrends && analytics.shipmentTrends.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={analytics.shipmentTrends}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="inbound" stroke="#14B8A6" name="Inbound" strokeWidth={2} />
+                      <Line type="monotone" dataKey="outbound" stroke="#8B5CF6" name="Outbound" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px] text-gray-500">
+                    No data available for the selected date range
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

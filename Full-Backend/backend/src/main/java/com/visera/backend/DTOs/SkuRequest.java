@@ -8,7 +8,7 @@ public class SkuRequest {
     private String skuCode;
     private String color;
     private String dimensions;
-    private Double weight;
+    private String weight;
     private Long binId;
     private Integer initialQuantity;
 }

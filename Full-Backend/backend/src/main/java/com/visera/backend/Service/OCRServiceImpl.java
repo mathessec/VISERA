@@ -1,7 +1,6 @@
 package com.visera.backend.Service;
 
 import org.springframework.http.HttpHeaders;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
@@ -23,13 +22,8 @@ public class OCRServiceImpl implements OCRService {
     @Value("${ocr.service.url:http://localhost:8000}")
     private String ocrServiceUrl;
 
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
-
-    public OCRServiceImpl() {
-        this.restTemplate = new RestTemplate();
-        this.objectMapper = new ObjectMapper();
-    }
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public OCRVerificationResult verifyPackageLabel(
@@ -41,33 +35,39 @@ public class OCRServiceImpl implements OCRService {
             String expectedDimensions
     ) {
         try {
-            // Prepare multipart request
-            HttpHeaders headers = new HttpHeaders();     // ✅ Now correct HttpHeaders
+            HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
-            // Add image file
+            // Add image
             ByteArrayResource fileResource = new ByteArrayResource(image.getBytes()) {
                 @Override
                 public String getFilename() {
                     return image.getOriginalFilename();
                 }
             };
-
             body.add("file", fileResource);
 
-            // Add expected values
-            if (expectedProductCode != null) body.add("expected_product_code", expectedProductCode);
-            if (expectedSku != null) body.add("expected_sku", expectedSku);
-            if (expectedWeight != null) body.add("expected_weight", expectedWeight);
-            if (expectedColor != null) body.add("expected_color", expectedColor);
-            if (expectedDimensions != null) body.add("expected_dimensions", expectedDimensions);
+            // ✅ CORRECT FIELD NAMES (MATCH FASTAPI)
+            if (expectedProductCode != null)
+                body.add("expected_pid", expectedProductCode);
+
+            if (expectedSku != null)
+                body.add("expected_sku", expectedSku);
+
+            if (expectedWeight != null)
+                body.add("expected_weight", expectedWeight);
+
+            if (expectedColor != null)
+                body.add("expected_color", expectedColor);
+
+            if (expectedDimensions != null)
+                body.add("expected_dimensions", expectedDimensions);
 
             HttpEntity<MultiValueMap<String, Object>> requestEntity =
                     new HttpEntity<>(body, headers);
 
-            // Call OCR service
             ResponseEntity<String> response = restTemplate.exchange(
                     ocrServiceUrl + "/verify-label",
                     HttpMethod.POST,
@@ -75,16 +75,12 @@ public class OCRServiceImpl implements OCRService {
                     String.class
             );
 
-            // Log raw response
-            System.out.println("OCR Service Response: " + response.getBody());
+            System.out.println("OCR RAW RESPONSE: " + response.getBody());
 
-            // Parse response
             return objectMapper.readValue(response.getBody(), OCRVerificationResult.class);
 
         } catch (Exception e) {
-            System.err.println("OCR Service Error: " + e.getMessage());
             e.printStackTrace();
-
             return OCRVerificationResult.builder()
                     .status("error")
                     .verificationResult("ERROR")

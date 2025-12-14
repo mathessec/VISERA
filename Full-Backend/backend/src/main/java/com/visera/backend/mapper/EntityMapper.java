@@ -72,6 +72,7 @@ public class EntityMapper {
         dto.setShipmentItemId(task.getShipmentItem().getId());
         dto.setTaskType(task.getTaskType());
         dto.setStatus(task.getStatus());
+        dto.setCreatedAt(task.getCreatedAt());
         return dto;
     }
 

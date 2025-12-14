@@ -14,7 +14,6 @@ import VerificationLogs from "../pages/admin/VerificationLogs";
 // Supervisor pages
 import Approvals from "../pages/supervisor/Approvals";
 import SupervisorReports from "../pages/supervisor/Reports";
-import SupervisorStock from "../pages/supervisor/Stock";
 import SupervisorDashboard from "../pages/supervisor/SupervisorDashboard";
 import SupervisorShipments from "../pages/supervisor/SupervisorShipments";
 import Workers from "../pages/supervisor/Workers";
@@ -154,7 +153,7 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={["SUPERVISOR"]}>
               <Layout>
-                <SupervisorStock />
+                <InventoryManagement />
               </Layout>
             </ProtectedRoute>
           }
