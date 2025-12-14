@@ -32,7 +32,7 @@ public class Sku {
     @NotBlank(message = "SKU code must not be blank")
     private String skuCode;
 
-    private Double weight;
+    private String weight;
     private String dimensions;
     private String color;
     
