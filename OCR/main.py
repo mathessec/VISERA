@@ -50,6 +50,19 @@ def get_weight_in_kg(text):
 
     return value  # kg
 
+def extract_weight_value(text):
+    """
+    Extracts only the numeric value from weight text.
+    Returns the number as a string (e.g., "200" or "100.5").
+    """
+    if not text:
+        return None
+    
+    match = re.search(r"(\d+(\.\d+)?)", text)
+    if match:
+        return match.group(1)
+    return None
+
 # ---------------- PARSER ----------------
 def parse_logistics_data(texts, scores):
     data = {
@@ -79,8 +92,11 @@ def parse_logistics_data(texts, scores):
 
         # WEIGHT
         if not data["weight"]:
-            if re.search(r"\d+(\.\d+)?\s*(kg|g|lb|oz)", line.lower()):
-                data["weight"] = line.strip()
+            weight_match = re.search(r"\d+(\.\d+)?\s*(kg|g|lb|oz)", line.lower())
+            if weight_match:
+                extracted_value = extract_weight_value(line)
+                if extracted_value:
+                    data["weight"] = extracted_value
 
         # COLOR
         if not data["color"]:

@@ -181,7 +181,7 @@ export default function SkuEdit() {
         skuCode: formData.skuCode,
         color: formData.color || null,
         dimensions: formData.dimensions || null,
-        weight: formData.weight ? parseFloat(formData.weight) : null,
+        weight: formData.weight || null,
       };
       
       await api.put(`/api/skus/update/${id}`, payload);

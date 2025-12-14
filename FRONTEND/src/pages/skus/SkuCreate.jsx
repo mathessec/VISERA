@@ -153,7 +153,7 @@ export default function SkuCreate() {
         skuCode: formData.skuCode,
         color: formData.color || null,
         dimensions: formData.dimensions || null,
-        weight: formData.weight ? parseFloat(formData.weight) : null,
+        weight: formData.weight || null,
         binId: formData.selectedBin ? parseInt(formData.selectedBin) : null,
         initialQuantity: formData.selectedBin && formData.initialQuantity
           ? parseInt(formData.initialQuantity)

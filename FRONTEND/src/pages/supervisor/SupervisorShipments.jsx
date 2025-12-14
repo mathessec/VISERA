@@ -1,65 +1,79 @@
 import { useState, useEffect } from 'react';
-import { Package, User, Search, UserPlus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Filter, Eye, Edit, Trash2, Plus, Users } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
-import Select from '../../components/common/Select';
 import Badge from '../../components/common/Badge';
 import Table, { TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/common/Table';
 import Modal from '../../components/common/Modal';
 import Loading from '../../components/common/Loading';
 import Alert from '../../components/common/Alert';
-import { getAllShipments, assignShipment } from '../../services/shipmentService';
-import { getAllUsers } from '../../services/userService';
+import { getAllShipments, deleteShipment } from '../../services/shipmentService';
 import { formatDate } from '../../utils/formatters';
 import { getStatusColor } from '../../utils/helpers';
 
 export default function SupervisorShipments() {
+  const navigate = useNavigate();
   const [shipments, setShipments] = useState([]);
-  const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [selectedShipment, setSelectedShipment] = useState(null);
-  const [selectedWorker, setSelectedWorker] = useState('');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [shipmentToDelete, setShipmentToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    fetchShipments();
   }, []);
 
-  const fetchData = async () => {
+  const fetchShipments = async () => {
     try {
-      const [shipmentsData, usersData] = await Promise.all([
-        getAllShipments(),
-        getAllUsers(),
-      ]);
-      setShipments(shipmentsData);
-      setWorkers(usersData.filter(u => u.role === 'WORKER'));
+      setLoading(true);
+      setError('');
+      const data = await getAllShipments();
+      setShipments(data);
     } catch (err) {
-      setError('Failed to load data');
+      console.error('Error fetching shipments:', err);
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          err.message || 
+                          'Failed to load shipments data';
+      setError(errorMessage === 'Access Denied' ? 'Access Denied: Failed to load shipment data' : errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAssign = async () => {
-    if (!selectedShipment || !selectedWorker) return;
-
-    try {
-      await assignShipment(selectedShipment.id, parseInt(selectedWorker));
-      setIsAssignModalOpen(false);
-      setSelectedShipment(null);
-      setSelectedWorker('');
-      fetchData();
-    } catch (err) {
-      setError('Failed to assign shipment');
-    }
+  const handleDeleteClick = (shipment) => {
+    setShipmentToDelete(shipment);
+    setDeleteModalOpen(true);
+    setError('');
   };
 
-  const openAssignModal = (shipment) => {
-    setSelectedShipment(shipment);
-    setIsAssignModalOpen(true);
+  const handleDeleteConfirm = async () => {
+    if (!shipmentToDelete) return;
+
+    try {
+      setDeleting(true);
+      setError('');
+      await deleteShipment(shipmentToDelete.id);
+      setSuccess(`Shipment SH-${shipmentToDelete.id} deleted successfully`);
+      setDeleteModalOpen(false);
+      setShipmentToDelete(null);
+      fetchShipments();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || 
+                          err.response?.data?.message || 
+                          err.message || 
+                          'Failed to delete shipment';
+      setError(errorMessage);
+      console.error('Error deleting shipment:', err);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const filteredShipments = shipments.filter(shipment =>
@@ -71,9 +85,20 @@ export default function SupervisorShipments() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Shipment Management</h1>
-        <p className="text-gray-600 mt-1">Assign and track shipments</p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Shipment Management
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Track all inbound and outbound shipments
+          </p>
+        </div>
+        <Button variant="primary" onClick={() => navigate("/shipments/create")}>
+          <Plus size={20} className="mr-2" />
+          Create Shipment
+        </Button>
       </div>
 
       {error && (
@@ -82,8 +107,15 @@ export default function SupervisorShipments() {
         </Alert>
       )}
 
+      {success && (
+        <Alert variant="success" onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
+
+      {/* Search */}
       <Card>
-        <div className="flex items-center gap-4 p-4">
+        <div className="flex items-center gap-4">
           <div className="flex-1">
             <Input
               placeholder="Search shipments..."
@@ -96,9 +128,14 @@ export default function SupervisorShipments() {
             <Search size={20} className="mr-2" />
             Search
           </Button>
+          <Button variant="outline">
+            <Filter size={20} className="mr-2" />
+            Filter
+          </Button>
         </div>
       </Card>
 
+      {/* Shipments Table */}
       <Card>
         <Table>
           <TableHeader>
@@ -106,9 +143,10 @@ export default function SupervisorShipments() {
               <TableHead>Shipment ID</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Created By</TableHead>
-              <TableHead>Assigned To</TableHead>
+              <TableHead>Packages</TableHead>
+              <TableHead>Assigned Worker(s)</TableHead>
               <TableHead>Date</TableHead>
+              <TableHead>Deadline</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -117,7 +155,11 @@ export default function SupervisorShipments() {
               <TableRow key={shipment.id}>
                 <TableCell className="font-medium">SH-{shipment.id}</TableCell>
                 <TableCell>
-                  <Badge variant={shipment.shipmentType === 'INBOUND' ? 'blue' : 'purple'}>
+                  <Badge
+                    variant={
+                      shipment.shipmentType === "INBOUND" ? "blue" : "purple"
+                    }
+                  >
                     {shipment.shipmentType}
                   </Badge>
                 </TableCell>
@@ -126,24 +168,68 @@ export default function SupervisorShipments() {
                     {shipment.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{shipment.createdBy?.name || '-'}</TableCell>
                 <TableCell>
-                  {shipment.assignedTo?.name || (
-                    <Badge variant="yellow">Unassigned</Badge>
+                  <span className="font-medium">{shipment.packageCount || 0}</span>
+                </TableCell>
+                <TableCell>
+                  {shipment.assignedWorkers && shipment.assignedWorkers.length > 0 ? (
+                    <div className="flex items-center gap-2">
+                      <Users size={16} className="text-gray-500" />
+                      <span className="font-medium">
+                        {shipment.assignedWorkers.length} Worker{shipment.assignedWorkers.length !== 1 ? 's' : ''}
+                      </span>
+                      <div className="group relative">
+                        <span className="text-gray-500 cursor-help">ℹ️</span>
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+                          {shipment.assignedWorkers.map((w) => w.name).join(', ')}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">Unassigned</span>
                   )}
                 </TableCell>
                 <TableCell>{formatDate(shipment.createdAt)}</TableCell>
                 <TableCell>
-                  {!shipment.assignedTo && (
+                  {shipment.deadline ? (
+                    <span className={new Date(shipment.deadline) < new Date() ? 'text-red-600 font-medium' : ''}>
+                      {formatDate(shipment.deadline)}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
                     <Button
                       size="sm"
-                      variant="primary"
-                      onClick={() => openAssignModal(shipment)}
+                      variant="outline"
+                      onClick={() => navigate(`/shipments/${shipment.id}`)}
+                      title="Preview"
                     >
-                      <UserPlus size={16} className="mr-1" />
-                      Assign
+                      <Eye size={16} className="mr-1" />
+                      Preview
                     </Button>
-                  )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/shipments/${shipment.id}/edit`)}
+                      title="Edit"
+                    >
+                      <Edit size={16} className="mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeleteClick(shipment)}
+                      title="Delete"
+                      className="text-red-600 hover:text-red-700 hover:border-red-300"
+                    >
+                      <Trash2 size={16} className="mr-1" />
+                      Delete
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -156,50 +242,51 @@ export default function SupervisorShipments() {
         )}
       </Card>
 
+      {/* Delete Confirmation Modal */}
       <Modal
-        isOpen={isAssignModalOpen}
+        isOpen={deleteModalOpen}
         onClose={() => {
-          setIsAssignModalOpen(false);
-          setSelectedShipment(null);
-          setSelectedWorker('');
+          if (!deleting) {
+            setDeleteModalOpen(false);
+            setShipmentToDelete(null);
+            setError('');
+          }
         }}
-        title="Assign Shipment to Worker"
+        title="Delete Shipment"
+        size="sm"
       >
         <div className="space-y-4">
-          <div>
-            <p className="text-sm text-gray-600">
-              Shipment: <span className="font-medium">SH-{selectedShipment?.id}</span>
-            </p>
-          </div>
-          <Select
-            label="Select Worker"
-            value={selectedWorker}
-            onChange={(e) => setSelectedWorker(e.target.value)}
-            options={[
-              { value: '', label: 'Select a worker' },
-              ...workers.map((w) => ({
-                value: w.id.toString(),
-                label: `${w.name} (${w.email})`,
-              })),
-            ]}
-          />
-          <div className="flex gap-4">
-            <Button
-              variant="primary"
-              onClick={handleAssign}
-              disabled={!selectedWorker}
-            >
-              Assign
-            </Button>
+          <p className="text-gray-600">
+            Are you sure you want to delete shipment{" "}
+            <strong>SH-{shipmentToDelete?.id}</strong> ({shipmentToDelete?.shipmentType})?
+            This action cannot be undone.
+          </p>
+          <p className="text-sm text-red-600">
+            This will also delete all associated packages and worker assignments.
+          </p>
+          {error && (
+            <Alert variant="error" onClose={() => setError('')}>
+              {error}
+            </Alert>
+          )}
+          <div className="flex gap-3 justify-end">
             <Button
               variant="outline"
               onClick={() => {
-                setIsAssignModalOpen(false);
-                setSelectedShipment(null);
-                setSelectedWorker('');
+                setDeleteModalOpen(false);
+                setShipmentToDelete(null);
+                setError('');
               }}
+              disabled={deleting}
             >
               Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleting ? "Deleting..." : "Delete"}
             </Button>
           </div>
         </div>

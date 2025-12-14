@@ -21,4 +21,9 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
             @Param("type") String shipmentType,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT COUNT(s) FROM Shipment s WHERE s.createdAt BETWEEN :startDate AND :endDate")
+    long countByCreatedAtBetween(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
 }

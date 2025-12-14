@@ -98,4 +98,3 @@ public class OCRVerificationResult {
         private String[] rawLines;
     }
 }
-
