@@ -23,6 +23,6 @@ public interface InventoryStockRepository extends JpaRepository<InventoryStock, 
     @Query("SELECT COALESCE(SUM(is.quantity), 0) FROM InventoryStock is WHERE is.sku.id = :skuId")
     int getTotalQuantityBySkuId(@Param("skuId") Long skuId);
     
-    @Query("SELECT is.bin.code FROM InventoryStock is WHERE is.sku.id = :skuId AND is.quantity > 0 ORDER BY is.quantity DESC")
+    @Query("SELECT COALESCE(b.code, b.name, 'N/A') FROM InventoryStock is JOIN is.bin b WHERE is.sku.id = :skuId AND is.quantity > 0 ORDER BY is.quantity DESC")
     List<String> getBinLocationsBySkuId(@Param("skuId") Long skuId);
 }

@@ -24,7 +24,7 @@ const menuByRole = {
     { name: 'Approvals', icon: CheckSquare, path: '/supervisor/approvals' },
     { name: 'Shipment Monitoring', icon: ShoppingCart, path: '/supervisor/shipments' },
     { name: 'Worker Monitoring', icon: Monitor, path: '/supervisor/workers' },
-    { name: 'Stock Monitoring', icon: ClipboardList, path: '/supervisor/stock' },
+    { name: 'Inventory', icon: Package2, path: '/supervisor/stock' },
     { name: 'Reports', icon: FileText, path: '/supervisor/reports' },
   ],
   WORKER: [
@@ -33,6 +33,7 @@ const menuByRole = {
     { name: 'Outbound Verification', icon: Truck, path: '/worker/outbound' },
     { name: 'Putaway', icon: MapPin, path: '/worker/putaway' },
     { name: 'Outbound Picking', icon: ShoppingCart, path: '/worker/picking' },
+    { name: 'Inventory', icon: Package2, path: '/inventory/stock' },
     { name: 'Issue Reporting', icon: AlertCircle, path: '/worker/issues' },
   ],
 };

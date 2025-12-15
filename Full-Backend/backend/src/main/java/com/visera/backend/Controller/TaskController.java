@@ -1,5 +1,9 @@
 package com.visera.backend.Controller;
 
+import com.visera.backend.DTOs.BinAllocation;
+import com.visera.backend.DTOs.PutawayItemDTO;
+import com.visera.backend.DTOs.PutawayStatisticsDTO;
+import com.visera.backend.DTOs.RecentCompletionDTO;
 import com.visera.backend.DTOs.TaskDTO;
 import com.visera.backend.Entity.Task;
 import com.visera.backend.Service.TaskService;
@@ -10,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -54,6 +59,71 @@ public class TaskController {
                 taskService.getTasksByUser(userId).stream()
                         .map(mapper::toTaskDTO).collect(java.util.stream.Collectors.toList())
         );
+    }
+
+    // Putaway endpoints
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
+    @GetMapping("/putaway/user/{userId}")
+    public ResponseEntity<List<PutawayItemDTO>> getPutawayItems(@PathVariable int userId) {
+        List<Task> tasks = taskService.getPutawayTasksByUser(userId);
+        List<PutawayItemDTO> items = tasks.stream()
+                .map(mapper::toPutawayItemDTO)
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(items);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
+    @GetMapping("/putaway/statistics/{userId}")
+    public ResponseEntity<PutawayStatisticsDTO> getPutawayStatistics(@PathVariable int userId) {
+        return ResponseEntity.ok(taskService.getPutawayStatistics(userId));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
+    @GetMapping("/putaway/recent-completions/{userId}")
+    public ResponseEntity<List<RecentCompletionDTO>> getRecentCompletions(@PathVariable int userId) {
+        List<Task> tasks = taskService.getCompletedPutawayTasksToday(userId);
+        List<RecentCompletionDTO> completions = tasks.stream()
+                .map(mapper::toRecentCompletionDTO)
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(completions);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
+    @PostMapping("/{id}/start-putaway")
+    public ResponseEntity<Task> startPutaway(@PathVariable Long id) {
+        Task task = taskService.startPutaway(id);
+        return (task != null) ? ResponseEntity.ok(task) : ResponseEntity.notFound().build();
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
+    @PostMapping("/{id}/complete-putaway")
+    public ResponseEntity<Task> completePutaway(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> request) {
+        Task task = null;
+        
+        // Check if it's single bin or multi-bin allocation
+        if (request.containsKey("allocations")) {
+            // Multi-bin allocation
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> allocationsList = (List<Map<String, Object>>) request.get("allocations");
+            List<BinAllocation> allocations = allocationsList.stream()
+                    .map(map -> BinAllocation.builder()
+                            .binId(Long.valueOf(map.get("binId").toString()))
+                            .quantity(Integer.valueOf(map.get("quantity").toString()))
+                            .build())
+                    .collect(java.util.stream.Collectors.toList());
+            task = taskService.completePutawayWithAllocation(id, allocations);
+        } else if (request.containsKey("binId") && request.containsKey("quantity")) {
+            // Single bin allocation
+            Long binId = Long.valueOf(request.get("binId").toString());
+            Integer quantity = Integer.valueOf(request.get("quantity").toString());
+            task = taskService.completePutaway(id, binId, quantity);
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        return (task != null) ? ResponseEntity.ok(task) : ResponseEntity.notFound().build();
     }
 
 }

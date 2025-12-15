@@ -50,7 +50,7 @@ export default function InventoryManagement() {
   // Refresh inventory when navigating to this page (e.g., from Add Stock Entry)
   useEffect(() => {
     if (
-      location.pathname === "/inventory/stock" &&
+      (location.pathname === "/inventory/stock" || location.pathname === "/supervisor/stock") &&
       location.state?.fromAddStock
     ) {
       fetchInventory();

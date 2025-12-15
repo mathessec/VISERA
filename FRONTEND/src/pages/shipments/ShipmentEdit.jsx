@@ -9,7 +9,7 @@ import MultiSelect from '../../components/common/MultiSelect';
 import PackageInputRow from '../../components/shipments/PackageInputRow';
 import Alert from '../../components/common/Alert';
 import Loading from '../../components/common/Loading';
-import { getShipmentById, updateShipment, assignWorkers, getAssignedWorkers, removeWorker } from '../../services/shipmentService';
+import { getShipmentById, updateShipment, assignWorkers, getAssignedWorkers, removeWorker, getAllShipments } from '../../services/shipmentService';
 import { getItemsByShipment, createBatchItems, deleteShipmentItem } from '../../services/shipmentItemService';
 import { getAllUsers } from '../../services/userService';
 import { getAllSkus } from '../../services/skuService';
@@ -41,20 +41,78 @@ export default function ShipmentEdit() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [shipmentData, packagesData, workersData, skusData, assignedWorkersData] = await Promise.all([
+      setError('');
+      
+      // Use Promise.allSettled to handle getAllUsers() failure gracefully (requires ADMIN role)
+      const [shipmentResult, packagesResult, usersResult, skusResult, assignedWorkersResult, shipmentsResult] = await Promise.allSettled([
         getShipmentById(id),
         getItemsByShipment(id),
-        getAllUsers(),
+        getAllUsers(), // May fail for supervisors (requires ADMIN role)
         getAllSkus(),
         getAssignedWorkers(id),
+        getAllShipments(), // Fetch all shipments to extract workers as fallback
       ]);
+
+      // Check if critical requests failed
+      if (shipmentResult.status === 'rejected') {
+        throw shipmentResult.reason;
+      }
+      if (packagesResult.status === 'rejected') {
+        console.error('Error fetching packages:', packagesResult.reason);
+      }
+      if (skusResult.status === 'rejected') {
+        console.error('Error fetching SKUs:', skusResult.reason);
+      }
+      if (assignedWorkersResult.status === 'rejected') {
+        console.error('Error fetching assigned workers:', assignedWorkersResult.reason);
+      }
+      if (usersResult.status === 'rejected') {
+        console.warn('Could not fetch users (may require ADMIN role):', usersResult.reason);
+      }
+      if (shipmentsResult.status === 'rejected') {
+        console.warn('Could not fetch all shipments:', shipmentsResult.reason);
+      }
+
+      // Extract successful results
+      const shipmentData = shipmentResult.value;
+      const packagesData = packagesResult.status === 'fulfilled' ? packagesResult.value : [];
+      const usersData = usersResult.status === 'fulfilled' ? usersResult.value : [];
+      const skusData = skusResult.status === 'fulfilled' ? skusResult.value : [];
+      const assignedWorkersData = assignedWorkersResult.status === 'fulfilled' ? assignedWorkersResult.value : [];
+      const allShipments = shipmentsResult.status === 'fulfilled' ? shipmentsResult.value : [];
 
       console.log('Shipment Data:', shipmentData);
       console.log('Packages Data:', packagesData);
       console.log('Assigned Workers Data:', assignedWorkersData);
 
       // Set workers and SKUs first
-      setWorkers(workersData.filter((u) => u.role === 'WORKER'));
+      // Extract workers from users if available, otherwise extract from shipments
+      if (usersData.length > 0) {
+        setWorkers(usersData.filter((u) => u.role === 'WORKER'));
+      } else {
+        // Fallback: extract workers from all shipments
+        const workerMap = new Map();
+        
+        // Add assigned workers from current shipment
+        assignedWorkersData.forEach((worker) => {
+          if (worker.role === 'WORKER') {
+            workerMap.set(worker.id, worker);
+          }
+        });
+        
+        // Extract workers from all shipments
+        allShipments.forEach((shipment) => {
+          if (shipment.assignedWorkers && Array.isArray(shipment.assignedWorkers)) {
+            shipment.assignedWorkers.forEach((worker) => {
+              if (worker.role === 'WORKER' && !workerMap.has(worker.id)) {
+                workerMap.set(worker.id, worker);
+              }
+            });
+          }
+        });
+        
+        setWorkers(Array.from(workerMap.values()));
+      }
       setSkus(skusData);
 
       // Populate form with shipment data
@@ -87,7 +145,11 @@ export default function ShipmentEdit() {
     } catch (err) {
       console.error('Error fetching data:', err);
       console.error('Error details:', err.response?.data);
-      setError('Failed to load shipment data: ' + (err.response?.data?.message || err.message));
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          err.message || 
+                          'Failed to load shipment data';
+      setError(errorMessage === 'Access Denied' ? 'Access Denied: Failed to load shipment data' : errorMessage);
     } finally {
       setLoading(false);
     }

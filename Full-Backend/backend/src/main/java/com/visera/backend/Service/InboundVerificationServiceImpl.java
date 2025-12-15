@@ -1,6 +1,8 @@
 package com.visera.backend.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.visera.backend.DTOs.BinAllocation;
+import com.visera.backend.DTOs.LocationAllocationResult;
 import com.visera.backend.DTOs.OCRVerificationResult;
 import com.visera.backend.DTOs.VerificationResponse;
 import com.visera.backend.Entity.*;
@@ -11,7 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class InboundVerificationServiceImpl implements InboundVerificationService {
@@ -23,6 +27,8 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
     private final ShipmentItemService shipmentItemService;
     private final UserRepository userRepository;
     private final InventoryStockRepository inventoryStockRepository;
+    private final LocationAllocationService locationAllocationService;
+    private final TaskService taskService;
     private final ObjectMapper objectMapper;
 
     public InboundVerificationServiceImpl(
@@ -32,7 +38,9 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
         InventoryStockService inventoryStockService,
         ShipmentItemService shipmentItemService,
         UserRepository userRepository,
-        InventoryStockRepository inventoryStockRepository
+        InventoryStockRepository inventoryStockRepository,
+        LocationAllocationService locationAllocationService,
+        TaskService taskService
     ) {
         this.ocrService = ocrService;
         this.verificationLogService = verificationLogService;
@@ -41,6 +49,8 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
         this.shipmentItemService = shipmentItemService;
         this.userRepository = userRepository;
         this.inventoryStockRepository = inventoryStockRepository;
+        this.locationAllocationService = locationAllocationService;
+        this.taskService = taskService;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -76,7 +86,7 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
                 image,
                 product.getProductCode(),
                 sku.getSkuCode(),
-                sku.getWeight() != null ? sku.getWeight().toString() : null,
+                sku.getWeight(),
                 sku.getColor(),
                 sku.getDimensions()
             );
@@ -89,8 +99,8 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
             boolean matched = "MATCH".equals(ocrResult.getVerificationResult());
 
             if (matched) {
-                // Auto-assign to bin
-                return handleMatchedVerification(shipmentItem, sku, ocrResult);
+                // Create PUTAWAY task instead of auto-assigning
+                return handleMatchedVerification(shipmentItem, sku, ocrResult, worker);
             } else {
                 // Create approval request
                 return handleMismatchedVerification(shipmentItem, worker, ocrResult, sku, product);
@@ -110,65 +120,96 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
     ) {
         OCRVerificationResult.ExtractedData data = ocrResult.getData();
         
+        // Ensure result is never null - default to MISMATCH if OCR result is null or empty
+        String result = ocrResult.getVerificationResult();
+        if (result == null || result.isEmpty()) {
+            result = "MISMATCH"; // Treat null/empty as mismatch for reporting purposes
+        }
+        
         return VerificationLog.builder()
             .shipmentItem(shipmentItem)
             .verifiedBy(worker)
-            .extractedSku(data.getSku())
+            .extractedSku(data != null ? data.getSku() : null)
             .expectedSku(sku.getSkuCode())
-            .extractedProductCode(data.getProductCode())
+            .extractedProductCode(data != null ? data.getProductCode() : null)
             .expectedProductCode(product.getProductCode())
-            .extractedWeight(data.getWeight())
-            .expectedWeight(sku.getWeight() != null ? sku.getWeight().toString() : null)
-            .extractedColor(data.getColor())
+            .extractedWeight(data != null ? data.getWeight() : null)
+            .expectedWeight(sku.getWeight())
+            .extractedColor(data != null ? data.getColor() : null)
             .expectedColor(sku.getColor())
-            .extractedDimensions(data.getDimensions())
+            .extractedDimensions(data != null ? data.getDimensions() : null)
             .expectedDimensions(sku.getDimensions())
-            .aiConfidence(data.getConfidenceScore())
-            .result(ocrResult.getVerificationResult())
+            .aiConfidence(data != null ? data.getConfidenceScore() : null)
+            .result(result)
             .build();
     }
 
     private VerificationResponse handleMatchedVerification(
         ShipmentItem shipmentItem,
         Sku sku,
-        OCRVerificationResult ocrResult
+        OCRVerificationResult ocrResult,
+        User worker
     ) {
         try {
-            // Find SKU's default bin location
-            InventoryStock existingStock = inventoryStockRepository
-                .findBySkuId(sku.getId())
-                .stream()
-                .findFirst()
-                .orElse(null);
+            // Ensure this is an INBOUND shipment
+            Shipment shipment = shipmentItem.getShipment();
+            if (shipment == null || !"INBOUND".equals(shipment.getShipmentType())) {
+                return buildErrorResponse("PUTAWAY tasks can only be created for INBOUND shipments");
+            }
 
-            String binLocation = null;
-            
-            if (existingStock != null && existingStock.getBin() != null) {
-                Bin bin = existingStock.getBin();
-                // Update existing stock
-                int newQuantity = existingStock.getQuantity() + shipmentItem.getQuantity();
-                inventoryStockService.updateQuantityById(existingStock.getId(), newQuantity);
-                
-                binLocation = formatBinLocation(bin);
-            } else {
-                // No default bin location found - this is an edge case
-                // We'll still mark as matched but not auto-assign
+            // Use LocationAllocationService to get allocation plan
+            LocationAllocationResult allocationResult = locationAllocationService
+                .allocateLocationWithOverflow(sku, shipmentItem.getQuantity());
+
+            if (allocationResult == null || allocationResult.getPrimaryBin() == null) {
                 return buildMismatchResponse(
-                    "Verification matched but no default bin location found for SKU. Manual assignment required.",
+                    "Verification matched but no suitable bin location found for SKU. Manual assignment required.",
                     ocrResult,
                     sku,
                     null
                 );
             }
 
-            // Update shipment item status
-            shipmentItem.setStatus("RECEIVED");
+            // Convert allocation plan to JSON
+            String allocationPlanJson = null;
+            if (allocationResult.getBinAllocations() != null && !allocationResult.getBinAllocations().isEmpty()) {
+                List<Map<String, Object>> allocations = allocationResult.getBinAllocations().stream()
+                    .map(ba -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("binId", ba.getBinId());
+                        map.put("binCode", ba.getBinCode());
+                        map.put("quantity", ba.getQuantity());
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+                allocationPlanJson = objectMapper.writeValueAsString(allocations);
+            }
+
+            // Create PUTAWAY task
+            Task putawayTask = Task.builder()
+                .user(worker)
+                .shipmentItem(shipmentItem)
+                .taskType("PUTAWAY")
+                .status("PENDING")
+                .suggestedBin(allocationResult.getPrimaryBin())
+                .suggestedLocation(allocationResult.getSuggestedLocation())
+                .suggestedZone(allocationResult.getPrimaryBin().getRack() != null 
+                    ? allocationResult.getPrimaryBin().getRack().getZone() 
+                    : null)
+                .inProgress(false)
+                .allocationPlan(allocationPlanJson)
+                .build();
+
+            taskService.createTask(putawayTask);
+
+            // Update shipment item status to VERIFIED (not RECEIVED yet)
+            shipmentItem.setStatus("VERIFIED");
             shipmentItemService.updateShipmentItem(shipmentItem.getId().intValue(), shipmentItem);
 
-            return buildSuccessResponse(ocrResult, sku, binLocation);
+            return buildSuccessResponse(ocrResult, sku, allocationResult.getSuggestedLocation());
 
         } catch (Exception e) {
-            return buildErrorResponse("Failed to assign to bin: " + e.getMessage());
+            return buildErrorResponse("Failed to create putaway task: " + e.getMessage());
         }
     }
 
@@ -184,7 +225,7 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
             Map<String, String> expectedData = new HashMap<>();
             expectedData.put("productCode", product.getProductCode());
             expectedData.put("skuCode", sku.getSkuCode());
-            expectedData.put("weight", sku.getWeight() != null ? sku.getWeight().toString() : null);
+            expectedData.put("weight", sku.getWeight());
             expectedData.put("color", sku.getColor());
             expectedData.put("dimensions", sku.getDimensions());
             
@@ -238,7 +279,7 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
                 .extractedSku(data.getSku())
                 .expectedSku(sku.getSkuCode())
                 .extractedWeight(data.getWeight())
-                .expectedWeight(sku.getWeight() != null ? sku.getWeight().toString() : null)
+                .expectedWeight(sku.getWeight())
                 .extractedColor(data.getColor())
                 .expectedColor(sku.getColor())
                 .extractedDimensions(data.getDimensions())
@@ -270,7 +311,7 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
                 .extractedSku(data.getSku())
                 .expectedSku(sku.getSkuCode())
                 .extractedWeight(data.getWeight())
-                .expectedWeight(sku.getWeight() != null ? sku.getWeight().toString() : null)
+                .expectedWeight(sku.getWeight())
                 .extractedColor(data.getColor())
                 .expectedColor(sku.getColor())
                 .extractedDimensions(data.getDimensions())
