@@ -4,10 +4,14 @@ import com.visera.backend.DTOs.*;
 import com.visera.backend.Entity.*;
 import com.visera.backend.Repository.ShipmentItemRepository;
 import com.visera.backend.Repository.ShipmentWorkerRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -21,6 +25,8 @@ public class EntityMapper {
     
     @Autowired
     private com.visera.backend.Repository.ApprovalRepository approvalRepository;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ShipmentDTO toShipmentDTO(Shipment shipment) {
         ShipmentDTO dto = new ShipmentDTO();
@@ -176,6 +182,115 @@ public class EntityMapper {
         dto.setDimensions(sku.getDimensions());
         dto.setWeight(sku.getWeight());
         dto.setProductId(sku.getProduct().getId());
+        return dto;
+    }
+
+    public PutawayItemDTO toPutawayItemDTO(Task task) {
+        PutawayItemDTO dto = new PutawayItemDTO();
+        dto.setId(task.getId());
+        
+        ShipmentItem shipmentItem = task.getShipmentItem();
+        dto.setShipmentItemId(shipmentItem.getId());
+        
+        Sku sku = shipmentItem.getSku();
+        dto.setSkuCode(sku.getSkuCode());
+        dto.setQuantity(shipmentItem.getQuantity());
+        
+        Product product = sku.getProduct();
+        dto.setProductName(product.getName());
+        dto.setCategory(product.getCategory());
+        
+        // Status: PENDING or IN_PROGRESS
+        String status = task.getInProgress() != null && task.getInProgress() ? "IN_PROGRESS" : "PENDING";
+        dto.setStatus(status);
+        
+        // Suggested location details
+        if (task.getSuggestedBin() != null) {
+            Bin bin = task.getSuggestedBin();
+            dto.setSuggestedBinId(bin.getId());
+            dto.setSuggestedBinCode(bin.getCode());
+            
+            if (bin.getRack() != null) {
+                Rack rack = bin.getRack();
+                dto.setSuggestedRackName(rack.getName());
+                
+                if (rack.getZone() != null) {
+                    Zone zone = rack.getZone();
+                    dto.setSuggestedZoneId(zone.getId());
+                    dto.setSuggestedZoneName(zone.getName());
+                }
+            }
+        }
+        
+        dto.setSuggestedLocation(task.getSuggestedLocation());
+        
+        // Parse allocation plan if exists
+        List<BinAllocation> allocationPlan = new ArrayList<>();
+        boolean hasOverflow = false;
+        int availableCapacity = 0;
+        
+        if (task.getAllocationPlan() != null && !task.getAllocationPlan().isEmpty()) {
+            try {
+                List<Map<String, Object>> allocations = objectMapper.readValue(
+                    task.getAllocationPlan(),
+                    new TypeReference<List<Map<String, Object>>>() {}
+                );
+                
+                if (allocations.size() > 1) {
+                    hasOverflow = true;
+                }
+                
+                for (Map<String, Object> alloc : allocations) {
+                    BinAllocation binAlloc = BinAllocation.builder()
+                        .binId(Long.valueOf(alloc.get("binId").toString()))
+                        .binCode(alloc.get("binCode") != null ? alloc.get("binCode").toString() : null)
+                        .quantity(Integer.valueOf(alloc.get("quantity").toString()))
+                        .build();
+                    allocationPlan.add(binAlloc);
+                    
+                    // Get available capacity for primary bin
+                    if (allocations.indexOf(alloc) == 0 && task.getSuggestedBin() != null) {
+                        Bin primaryBin = task.getSuggestedBin();
+                        if (primaryBin.getCapacity() != null) {
+                            // Calculate available capacity (would need to check current stock)
+                            availableCapacity = primaryBin.getCapacity();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // If parsing fails, just continue without allocation plan
+            }
+        }
+        
+        dto.setAllocationPlan(allocationPlan);
+        dto.setHasOverflow(hasOverflow);
+        dto.setAvailableCapacity(availableCapacity);
+        
+        return dto;
+    }
+
+    public RecentCompletionDTO toRecentCompletionDTO(Task task) {
+        RecentCompletionDTO dto = new RecentCompletionDTO();
+        dto.setTaskId(task.getId());
+        
+        ShipmentItem shipmentItem = task.getShipmentItem();
+        Sku sku = shipmentItem.getSku();
+        dto.setSkuCode(sku.getSkuCode());
+        dto.setProductName(sku.getProduct().getName());
+        
+        // Get location from suggested location or bin code
+        if (task.getSuggestedBin() != null && task.getSuggestedBin().getCode() != null) {
+            dto.setLocation(task.getSuggestedBin().getCode());
+        } else if (task.getSuggestedLocation() != null) {
+            // Extract bin code from location string if possible
+            dto.setLocation(task.getSuggestedLocation());
+        } else {
+            dto.setLocation("N/A");
+        }
+        
+        // Use completedAt if available, otherwise use createdAt
+        dto.setCompletedAt(task.getCompletedAt() != null ? task.getCompletedAt() : task.getCreatedAt());
+        
         return dto;
     }
 }
