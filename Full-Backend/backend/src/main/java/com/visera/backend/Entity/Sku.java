@@ -47,6 +47,11 @@ public class Sku {
     @JsonIgnore
     private List<InventoryStock> inventoryStocks = new ArrayList<>();
 
+    @OneToMany(mappedBy = "sku", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @JsonIgnore
+    private List<ShipmentItem> shipmentItems = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

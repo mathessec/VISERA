@@ -1,9 +1,13 @@
 package com.visera.backend.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "shipment_items")
@@ -32,5 +36,20 @@ public class ShipmentItem {
     private Integer quantity;
 
     private String status; // RECEIVED, STORED, PICKED, PACKED
+
+    @OneToMany(mappedBy = "shipmentItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @JsonIgnore
+    private List<Task> tasks = new ArrayList<>();
+
+    @OneToMany(mappedBy = "shipmentItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @JsonIgnore
+    private List<Approval> approvals = new ArrayList<>();
+
+    @OneToMany(mappedBy = "shipmentItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @JsonIgnore
+    private List<VerificationLog> verificationLogs = new ArrayList<>();
 }
 

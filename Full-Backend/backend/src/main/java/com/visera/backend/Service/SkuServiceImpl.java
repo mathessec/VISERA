@@ -13,12 +13,9 @@ import com.visera.backend.Entity.Bin;
 import com.visera.backend.Entity.InventoryStock;
 import com.visera.backend.Entity.ShipmentItem;
 import com.visera.backend.Entity.Sku;
-import com.visera.backend.Entity.VerificationLog;
 import com.visera.backend.Repository.BinRepository;
 import com.visera.backend.Repository.InventoryStockRepository;
-import com.visera.backend.Repository.ShipmentItemRepository;
 import com.visera.backend.Repository.SkuRepository;
-import com.visera.backend.Repository.VerificationLogRepository;
 import com.visera.backend.mapper.EntityMapper;
 
 @Service
@@ -31,12 +28,6 @@ public class SkuServiceImpl implements SkuService {
 
     @Autowired
     private BinRepository binRepository;
-
-    @Autowired
-    private ShipmentItemRepository shipmentItemRepository;
-
-    @Autowired
-    private VerificationLogRepository verificationLogRepository;
 
     @Autowired
     private EntityMapper mapper;
@@ -112,31 +103,27 @@ public class SkuServiceImpl implements SkuService {
     public void deleteSku(int id) {
         Long skuId = Long.valueOf(id);
 
-        // Check if SKU exists
+        // Load the SKU with all its relationships to enable cascade deletion
         Sku sku = repo.findById(skuId)
                 .orElseThrow(() -> new RuntimeException("SKU not found with id: " + id));
 
-        // Step 1: Find all ShipmentItems for this SKU
-        List<ShipmentItem> shipmentItems = shipmentItemRepository.findBySkuId(skuId);
-
-        if (!shipmentItems.isEmpty()) {
-            // Step 2: Extract ShipmentItem IDs
-            List<Long> shipmentItemIds = shipmentItems.stream()
-                    .map(ShipmentItem::getId)
-                    .collect(Collectors.toList());
-
-            // Step 3: Delete VerificationLogs for these ShipmentItems
-            List<VerificationLog> verificationLogs = verificationLogRepository.findByShipmentItemIdIn(shipmentItemIds);
-            if (!verificationLogs.isEmpty()) {
-                verificationLogRepository.deleteAll(verificationLogs);
+        // Initialize collections to ensure they're loaded in the persistence context
+        // This is necessary for cascade deletion to work
+        if (sku.getInventoryStocks() != null) {
+            sku.getInventoryStocks().size(); // Force initialization
+        }
+        if (sku.getShipmentItems() != null) {
+            sku.getShipmentItems().size(); // Force initialization
+            // Also initialize nested relationships for ShipmentItems
+            for (ShipmentItem item : sku.getShipmentItems()) {
+                if (item.getTasks() != null) item.getTasks().size();
+                if (item.getApprovals() != null) item.getApprovals().size();
+                if (item.getVerificationLogs() != null) item.getVerificationLogs().size();
             }
-
-            // Step 4: Delete ShipmentItems
-            shipmentItemRepository.deleteAll(shipmentItems);
         }
 
-        // Step 5: Delete the SKU (InventoryStock will be cascade deleted by JPA)
-        repo.deleteById(skuId);
+        // Delete the SKU - cascade will handle all related entities
+        repo.delete(sku);
     }
 
     @Override
@@ -150,7 +137,11 @@ public class SkuServiceImpl implements SkuService {
 
             // Get primary bin location (first bin with stock, ordered by quantity DESC)
             List<String> binLocations = inventoryStockRepo.getBinLocationsBySkuId(skuId);
-            String binLocation = binLocations.isEmpty() ? "-" : binLocations.get(0);
+            // Filter out null/empty values and get first valid location
+            String binLocation = binLocations.stream()
+                    .filter(loc -> loc != null && !loc.isEmpty() && !loc.equals("N/A"))
+                    .findFirst()
+                    .orElse("-");
 
             // Calculate status (Low Stock if quantity < 50, otherwise In Stock)
             String status = totalQuantity > 0 ? (totalQuantity < 50 ? "Low Stock" : "In Stock") : "Out of Stock";
