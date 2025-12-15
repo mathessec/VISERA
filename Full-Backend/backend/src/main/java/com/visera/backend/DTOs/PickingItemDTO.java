@@ -39,5 +39,9 @@ public class PickingItemDTO {
     private Long assignedToUserId;
     private String assignedToUserName;
     private Boolean isAssignedToMe; // For UI to enable/disable actions
+    
+    // Stock information
+    private Integer availableStock; // Available stock in suggested bin
+    private Boolean hasInsufficientStock; // True if availableStock < quantity
 }
 

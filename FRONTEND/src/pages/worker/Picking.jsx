@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Package, Clock, CheckCircle, Truck } from 'lucide-react';
 import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';
 import Loading from '../../components/common/Loading';
@@ -16,6 +16,7 @@ export default function Picking() {
   const [selectedPickList, setSelectedPickList] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const selectedShipmentIdRef = useRef(null);
 
   useEffect(() => {
     fetchData();
@@ -44,23 +45,42 @@ export default function Picking() {
 
   const handleStartPicking = (pickList) => {
     setSelectedPickList(pickList);
+    selectedShipmentIdRef.current = pickList.shipmentId;
   };
 
   const handleCompletePicking = async (taskId) => {
     try {
       const userId = parseInt(getUserId());
       await completePicking(taskId, userId);
-      // Refresh data after completion
-      await fetchData();
+      // Don't refresh here - let the modal handle it after all items are dispatched
     } catch (err) {
-      throw err; // Let the modal handle the error
+      // Log the full error for debugging
+      console.error('Error completing picking:', err);
+      console.error('Error response:', err.response?.data);
+      throw err; // Re-throw to let modal handle it
     }
   };
 
   const handleCloseModal = () => {
     setSelectedPickList(null);
+    selectedShipmentIdRef.current = null;
     fetchData(); // Refresh data when modal closes
   };
+
+  // Update selectedPickList when pickingItems changes (after refresh)
+  useEffect(() => {
+    if (selectedShipmentIdRef.current && pickingItems.length >= 0) {
+      const pickLists = groupTasksByShipment(pickingItems);
+      const updatedPickList = pickLists.find(pl => pl.shipmentId === selectedShipmentIdRef.current);
+      if (updatedPickList) {
+        setSelectedPickList(updatedPickList);
+      } else {
+        // Pick list no longer exists (all items dispatched), close modal
+        setSelectedPickList(null);
+        selectedShipmentIdRef.current = null;
+      }
+    }
+  }, [pickingItems]);
 
   if (loading) return <Loading text="Loading picking operations..." />;
 
@@ -186,6 +206,7 @@ export default function Picking() {
           onClose={handleCloseModal}
           pickList={selectedPickList}
           onComplete={handleCompletePicking}
+          onRefresh={fetchData}
         />
       )}
     </div>

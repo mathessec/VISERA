@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Package, MapPin, CheckCircle, Truck } from 'lucide-react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
@@ -6,19 +6,35 @@ import Badge from '../common/Badge';
 import Alert from '../common/Alert';
 import { formatPickListId } from '../../utils/pickingUtils';
 
-export default function PickingDetailModal({ isOpen, onClose, pickList, onComplete }) {
+export default function PickingDetailModal({ isOpen, onClose, pickList, onComplete, onRefresh }) {
   const [selectedTaskIds, setSelectedTaskIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [currentPickList, setCurrentPickList] = useState(pickList);
 
-  if (!pickList) return null;
+  // Update currentPickList when pickList prop changes (after refresh)
+  useEffect(() => {
+    if (pickList) {
+      setCurrentPickList(pickList);
+      // Clear selection of dispatched items
+      setSelectedTaskIds(prev => {
+        // Filter out tasks that are now completed/dispatched
+        return prev.filter(taskId => {
+          const task = pickList.tasks.find(t => t.id === taskId);
+          return task && task.status !== 'COMPLETED' && task.status !== 'DISPATCHED';
+        });
+      });
+    }
+  }, [pickList]);
 
-  const pickListId = formatPickListId(pickList.shipmentId);
-  const totalItems = pickList.tasks.length;
-  const pickedCount = pickList.tasks.filter(t => t.status === 'COMPLETED' || t.status === 'DISPATCHED').length;
+  if (!currentPickList) return null;
+
+  const pickListId = formatPickListId(currentPickList.shipmentId);
+  const totalItems = currentPickList.tasks.length;
+  const pickedCount = currentPickList.tasks.filter(t => t.status === 'COMPLETED' || t.status === 'DISPATCHED').length;
   
   // Get only pending/in-progress tasks that can be selected
-  const availableTasks = pickList.tasks.filter(t => 
+  const availableTasks = currentPickList.tasks.filter(t => 
     t.status !== 'COMPLETED' && t.status !== 'DISPATCHED'
   );
 
@@ -48,20 +64,71 @@ export default function PickingDetailModal({ isOpen, onClose, pickList, onComple
       return;
     }
 
+    // Check for items with insufficient stock before dispatching
+    const insufficientStockTasks = selectedTaskIds
+      .map(taskId => currentPickList.tasks.find(t => t.id === taskId))
+      .filter(task => task && task.hasInsufficientStock);
+    
+    if (insufficientStockTasks.length > 0) {
+      const taskNames = insufficientStockTasks.map(t => 
+        `${t.productName} (${t.skuCode}): Available ${t.availableStock || 0}, Required ${t.quantity}`
+      ).join('\n');
+      setError(`Cannot dispatch items with insufficient stock:\n${taskNames}\n\nPlease check inventory or contact supervisor.`);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
+      const failedTasks = [];
+      
       // Dispatch each selected task
       for (const taskId of selectedTaskIds) {
-        await onComplete(taskId);
+        try {
+          await onComplete(taskId);
+        } catch (err) {
+          // Log error for debugging
+          console.error(`Failed to dispatch task ${taskId}:`, err);
+          console.error('Error response data:', err.response?.data);
+          // Find the task details for better error message
+          const task = currentPickList.tasks.find(t => t.id === taskId);
+          const taskName = task ? `${task.productName} (${task.skuCode})` : `Task ${taskId}`;
+          failedTasks.push({ taskId, taskName, error: err });
+        }
       }
       
-      // Clear selection and close modal
-      setSelectedTaskIds([]);
-      onClose();
+      // Refresh data regardless of success/failure to update UI
+      if (onRefresh) {
+        await onRefresh();
+        // After refresh, the pickList prop will be updated by parent
+        // The useEffect will update currentPickList automatically
+      }
+      
+      if (failedTasks.length > 0) {
+        // Some tasks failed
+        const errorMessages = failedTasks.map(ft => {
+          const errorMsg = ft.error?.response?.data?.message || 
+                          ft.error?.response?.data?.error || 
+                          ft.error?.message || 
+                          'Unknown error';
+          return `${ft.taskName}: ${errorMsg}`;
+        });
+        setError(`Failed to dispatch ${failedTasks.length} item(s):\n${errorMessages.join('\n')}`);
+        // Clear selection of failed items so user can retry
+        const failedTaskIds = failedTasks.map(ft => ft.taskId);
+        setSelectedTaskIds(prev => prev.filter(id => !failedTaskIds.includes(id)));
+      } else {
+        // All tasks succeeded
+        setSelectedTaskIds([]);
+        onClose();
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to dispatch items');
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          err.message || 
+                          'Failed to dispatch items';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -72,7 +139,7 @@ export default function PickingDetailModal({ isOpen, onClose, pickList, onComple
       <div className="space-y-6">
         {error && (
           <Alert variant="error" onClose={() => setError('')}>
-            {error}
+            <div className="whitespace-pre-line">{error}</div>
           </Alert>
         )}
 
@@ -83,8 +150,8 @@ export default function PickingDetailModal({ isOpen, onClose, pickList, onComple
             <Badge variant="blue">{pickedCount}/{totalItems} Picked</Badge>
           </div>
           <p className="text-sm text-gray-600">
-            {pickList.destination && `Destination: ${pickList.destination}`}
-            {pickList.orderNumber && ` • Order: ${pickList.orderNumber}`}
+            {currentPickList.destination && `Destination: ${currentPickList.destination}`}
+            {currentPickList.orderNumber && ` • Order: ${currentPickList.orderNumber}`}
           </p>
         </div>
 
@@ -117,7 +184,7 @@ export default function PickingDetailModal({ isOpen, onClose, pickList, onComple
             )}
           </div>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {pickList.tasks.map((task) => {
+            {currentPickList.tasks.map((task) => {
               const isCompleted = task.status === 'COMPLETED' || task.status === 'DISPATCHED';
               const isSelected = selectedTaskIds.includes(task.id);
               const isAvailable = !isCompleted;
@@ -128,21 +195,29 @@ export default function PickingDetailModal({ isOpen, onClose, pickList, onComple
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                     isCompleted
                       ? 'bg-green-50 border-green-200 cursor-not-allowed'
+                      : task.hasInsufficientStock
+                      ? 'bg-red-50 border-red-300'
                       : isSelected
                       ? 'bg-blue-50 border-blue-300'
                       : 'bg-gray-50 border-gray-200 hover:border-gray-300'
                   }`}
-                  onClick={() => isAvailable && handleToggleSelection(task.id)}
+                  onClick={() => isAvailable && !task.hasInsufficientStock && handleToggleSelection(task.id)}
                 >
                   <div className="flex items-start gap-3">
-                    {isAvailable && (
+                    {isAvailable && !task.hasInsufficientStock && (
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => handleToggleSelection(task.id)}
                         onClick={(e) => e.stopPropagation()}
                         className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        disabled={task.hasInsufficientStock}
                       />
+                    )}
+                    {isAvailable && task.hasInsufficientStock && (
+                      <div className="mt-1 h-4 w-4 flex items-center justify-center text-red-600">
+                        ⚠️
+                      </div>
                     )}
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -151,7 +226,23 @@ export default function PickingDetailModal({ isOpen, onClose, pickList, onComple
                         {isSelected && !isCompleted && <CheckCircle className="w-4 h-4 text-blue-600" />}
                       </div>
                       <p className="text-xs text-gray-600">SKU: {task.skuCode}</p>
-                      <p className="text-xs text-gray-600">Quantity: {task.quantity}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-gray-600">Required: {task.quantity}</p>
+                        {task.availableStock !== undefined && task.availableStock !== null && (
+                          <p className={`text-xs font-medium ${
+                            task.hasInsufficientStock 
+                              ? 'text-red-600' 
+                              : 'text-green-600'
+                          }`}>
+                            Available: {task.availableStock}
+                          </p>
+                        )}
+                      </div>
+                      {task.hasInsufficientStock && !isCompleted && (
+                        <p className="text-xs text-red-600 font-medium mt-1">
+                          ⚠️ Insufficient stock in suggested location
+                        </p>
+                      )}
                       {task.suggestedLocation && (
                         <div className="flex items-center gap-1 mt-1 text-xs text-gray-600">
                           <MapPin size={12} />
