@@ -41,6 +41,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public List<User> getUsersByRole(String role) {
+        return repo.findByRole(role.toUpperCase());
+    }
+
+    @Override
     public User updateUser(int id, User updatedUser) {
         return repo.findById((long) id).map(user -> {
             user.setName(updatedUser.getName());

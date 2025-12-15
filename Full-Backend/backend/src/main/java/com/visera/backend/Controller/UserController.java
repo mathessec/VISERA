@@ -97,6 +97,15 @@ public class UserController {
         );
     }
 
+    // Get workers (users with WORKER role) → ADMIN & SUPERVISOR
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @GetMapping("/workers")
+    public ResponseEntity<List<UserDTO>> getWorkers() {
+        return ResponseEntity.ok(
+                userService.getUsersByRole("WORKER").stream().map(this::mapToDTO).toList()
+        );
+    }
+
     private UserDTO mapToDTO(User user) {
         UserDTO dto = new UserDTO();
         dto.setId(user.getId());
