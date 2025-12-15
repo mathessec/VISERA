@@ -182,6 +182,12 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    public List<Task> getDispatchedPickingTasks(int userId) {
+        // Get all completed (dispatched) PICKING tasks for OUTBOUND shipments
+        return repo.findCompletedPickingTasksForOutbound("PICKING", "COMPLETED");
+    }
+
+    @Override
     public PickingStatisticsDTO getPickingStatistics(int userId) {
         // Get all pending/in-progress picking tasks for this user
         List<Task> pendingTasks = repo.findPickingTasksByUserForOutbound((long) userId, "PICKING", "COMPLETED");

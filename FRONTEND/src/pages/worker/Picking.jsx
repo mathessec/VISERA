@@ -6,16 +6,19 @@ import Alert from '../../components/common/Alert';
 import SummaryCard from '../../components/picking/SummaryCard';
 import PickListItem from '../../components/picking/PickListItem';
 import PickingDetailModal from '../../components/picking/PickingDetailModal';
-import { getPickingItems, getPickingStatistics, completePicking } from '../../services/taskService';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/common/Tabs';
+import { getPickingItems, getPickingStatistics, completePicking, getDispatchedPickingItems } from '../../services/taskService';
 import { getUserId } from '../../services/authService';
 import { groupTasksByShipment } from '../../utils/pickingUtils';
 
 export default function Picking() {
   const [pickingItems, setPickingItems] = useState([]);
+  const [dispatchedItems, setDispatchedItems] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [selectedPickList, setSelectedPickList] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('active');
   const selectedShipmentIdRef = useRef(null);
 
   useEffect(() => {
@@ -28,12 +31,14 @@ export default function Picking() {
       setError('');
       const userId = parseInt(getUserId());
       
-      const [itemsData, statsData] = await Promise.all([
+      const [itemsData, dispatchedData, statsData] = await Promise.all([
         getPickingItems(userId),
+        getDispatchedPickingItems(userId),
         getPickingStatistics(userId)
       ]);
       
       setPickingItems(itemsData);
+      setDispatchedItems(dispatchedData);
       setStatistics(statsData);
     } catch (err) {
       setError('Failed to load picking data');
@@ -86,6 +91,7 @@ export default function Picking() {
 
   // Group tasks by shipment
   const pickLists = groupTasksByShipment(pickingItems);
+  const dispatchedPickLists = groupTasksByShipment(dispatchedItems);
 
   return (
     <div className="space-y-6">
@@ -133,30 +139,61 @@ export default function Picking() {
 
       {/* Main Content Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Panel: Active Pick Lists */}
+        {/* Left Panel: Pick Lists with Tabs */}
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Active Pick Lists</CardTitle>
+              <CardTitle>Pick Lists</CardTitle>
             </CardHeader>
             <CardContent>
-              {pickLists.length === 0 ? (
-                <div className="text-center py-12">
-                  <Package size={48} className="mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-500">No pick lists available</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {pickLists.map((pickList) => (
-                    <PickListItem
-                      key={pickList.shipmentId}
-                      pickList={pickList}
-                      currentUserId={parseInt(getUserId())}
-                      onStartPicking={handleStartPicking}
-                    />
-                  ))}
-                </div>
-              )}
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="active">Active Pick Lists</TabsTrigger>
+                  <TabsTrigger value="dispatched">Ready to Ship</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="active">
+                  {pickLists.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Package size={48} className="mx-auto mb-4 text-gray-400" />
+                      <p className="text-gray-500">No pick lists available</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {pickLists.map((pickList) => (
+                        <PickListItem
+                          key={pickList.shipmentId}
+                          pickList={pickList}
+                          currentUserId={parseInt(getUserId())}
+                          onStartPicking={handleStartPicking}
+                          isDispatched={false}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="dispatched">
+                  {dispatchedPickLists.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Truck size={48} className="mx-auto mb-4 text-gray-400" />
+                      <p className="text-gray-500">No items ready to ship</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {dispatchedPickLists.map((pickList) => (
+                        <PickListItem
+                          key={pickList.shipmentId}
+                          pickList={pickList}
+                          currentUserId={parseInt(getUserId())}
+                          onStartPicking={handleStartPicking}
+                          isDispatched={true}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </div>

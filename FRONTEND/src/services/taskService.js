@@ -69,6 +69,11 @@ export const getPickingStatistics = async (userId) => {
   return response.data;
 };
 
+export const getDispatchedPickingItems = async (userId) => {
+  const response = await api.get(`/api/tasks/picking/dispatched/${userId}`);
+  return response.data;
+};
+
 export const completePicking = async (taskId, userId) => {
   const response = await api.post(`/api/tasks/${taskId}/complete-picking`, null, {
     params: { userId }
