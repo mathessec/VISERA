@@ -25,6 +25,9 @@ public class EntityMapper {
     
     @Autowired
     private com.visera.backend.Repository.ApprovalRepository approvalRepository;
+    
+    @Autowired
+    private com.visera.backend.Repository.InventoryStockRepository inventoryStockRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -323,6 +326,24 @@ public class EntityMapper {
             dto.setIsAssignedToMe(currentUserId != null && task.getUser().getId().equals(currentUserId));
         } else {
             dto.setIsAssignedToMe(false);
+        }
+        
+        // Stock information - check available stock in suggested bin
+        if (task.getSuggestedBin() != null && sku != null) {
+            inventoryStockRepository.findBySkuIdAndBinId(sku.getId(), task.getSuggestedBin().getId())
+                .ifPresentOrElse(
+                    stock -> {
+                        dto.setAvailableStock(stock.getQuantity());
+                        dto.setHasInsufficientStock(stock.getQuantity() < shipmentItem.getQuantity());
+                    },
+                    () -> {
+                        dto.setAvailableStock(0);
+                        dto.setHasInsufficientStock(true);
+                    }
+                );
+        } else {
+            dto.setAvailableStock(0);
+            dto.setHasInsufficientStock(true);
         }
         
         return dto;

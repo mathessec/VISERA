@@ -157,14 +157,34 @@ public class TaskController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
     @PostMapping("/{id}/complete-picking")
-    public ResponseEntity<Task> completePicking(
+    public ResponseEntity<?> completePicking(
             @PathVariable Long id,
             @RequestParam int userId) {
         try {
             Task task = taskService.completePicking(id, userId);
-            return (task != null) ? ResponseEntity.ok(task) : ResponseEntity.notFound().build();
+            if (task == null) {
+                Map<String, String> errorResponse = new java.util.HashMap<>();
+                errorResponse.put("message", "Task not found");
+                errorResponse.put("error", "Task not found");
+                return new ResponseEntity<>(errorResponse, org.springframework.http.HttpStatus.NOT_FOUND);
+            }
+            return ResponseEntity.ok(task);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            // Log the error for debugging
+            System.err.println("Error completing picking task " + id + " for user " + userId + ": " + e.getMessage());
+            e.printStackTrace();
+            Map<String, String> errorResponse = new java.util.HashMap<>();
+            errorResponse.put("message", e.getMessage() != null ? e.getMessage() : "Failed to complete picking");
+            errorResponse.put("error", "Failed to complete picking");
+            return new ResponseEntity<>(errorResponse, org.springframework.http.HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            // Log the error for debugging
+            System.err.println("Unexpected error completing picking task " + id + " for user " + userId + ": " + e.getMessage());
+            e.printStackTrace();
+            Map<String, String> errorResponse = new java.util.HashMap<>();
+            errorResponse.put("message", e.getMessage() != null ? e.getMessage() : "An unexpected error occurred");
+            errorResponse.put("error", "Failed to complete picking");
+            return new ResponseEntity<>(errorResponse, org.springframework.http.HttpStatus.BAD_REQUEST);
         }
     }
 

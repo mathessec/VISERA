@@ -249,9 +249,16 @@ public class TaskServiceImpl implements TaskService {
             // Validate sufficient quantity exists
             int requiredQuantity = shipmentItem.getQuantity();
             if (stock.getQuantity() < requiredQuantity) {
-                throw new RuntimeException(
-                        String.format("Insufficient stock. Available: %d, Required: %d", 
-                                stock.getQuantity(), requiredQuantity));
+                String errorMessage = String.format(
+                    "Insufficient stock for %s (SKU: %s). Available: %d, Required: %d in location %s. " +
+                    "Please check alternative locations or contact supervisor.",
+                    sku.getProduct() != null ? sku.getProduct().getName() : "item",
+                    sku.getSkuCode(),
+                    stock.getQuantity(),
+                    requiredQuantity,
+                    task.getSuggestedLocation() != null ? task.getSuggestedLocation() : "suggested bin"
+                );
+                throw new RuntimeException(errorMessage);
             }
 
             // Deduct quantity from inventory stock
