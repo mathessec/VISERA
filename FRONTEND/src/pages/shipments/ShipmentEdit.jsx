@@ -57,11 +57,12 @@ export default function ShipmentEdit() {
       if (shipmentResult.status === 'rejected') {
         throw shipmentResult.reason;
       }
-      if (packagesResult.status === 'rejected') {
-        console.error('Error fetching packages:', packagesResult.reason);
-      }
       if (skusResult.status === 'rejected') {
         console.error('Error fetching SKUs:', skusResult.reason);
+        throw new Error('Failed to load SKUs. Please refresh the page.');
+      }
+      if (packagesResult.status === 'rejected') {
+        console.error('Error fetching packages:', packagesResult.reason);
       }
       if (assignedWorkersResult.status === 'rejected') {
         console.error('Error fetching assigned workers:', assignedWorkersResult.reason);
