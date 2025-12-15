@@ -46,5 +46,30 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             @Param("userId") Long userId,
             @Param("taskType") String taskType,
             @Param("status") String status);
+
+    // Picking tasks for OUTBOUND shipments only
+    @Query("SELECT t FROM Task t WHERE t.user.id = :userId AND t.taskType = :taskType AND t.status != :status AND t.shipmentItem.shipment.shipmentType = 'OUTBOUND'")
+    List<Task> findPickingTasksByUserForOutbound(
+            @Param("userId") Long userId,
+            @Param("taskType") String taskType,
+            @Param("status") String status);
+
+    @Query("SELECT t FROM Task t WHERE t.taskType = :taskType AND t.status != :status AND t.shipmentItem.shipment.shipmentType = 'OUTBOUND'")
+    List<Task> findAllPickingTasksForOutbound(
+            @Param("taskType") String taskType,
+            @Param("status") String status);
+
+    @Query("SELECT t FROM Task t WHERE t.user.id = :userId AND t.taskType = :taskType AND t.status = :status AND t.createdAt >= :date AND t.shipmentItem.shipment.shipmentType = 'OUTBOUND'")
+    List<Task> findCompletedPickingTasksTodayForOutbound(
+            @Param("userId") Long userId,
+            @Param("taskType") String taskType,
+            @Param("status") String status,
+            @Param("date") LocalDateTime date);
+
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.user.id = :userId AND t.taskType = :taskType AND t.status = :status AND t.shipmentItem.shipment.shipmentType = 'OUTBOUND'")
+    long countPickingTasksByUserAndStatusForOutbound(
+            @Param("userId") Long userId,
+            @Param("taskType") String taskType,
+            @Param("status") String status);
 }
 

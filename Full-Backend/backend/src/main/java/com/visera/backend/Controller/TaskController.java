@@ -1,6 +1,8 @@
 package com.visera.backend.Controller;
 
 import com.visera.backend.DTOs.BinAllocation;
+import com.visera.backend.DTOs.PickingItemDTO;
+import com.visera.backend.DTOs.PickingStatisticsDTO;
 import com.visera.backend.DTOs.PutawayItemDTO;
 import com.visera.backend.DTOs.PutawayStatisticsDTO;
 import com.visera.backend.DTOs.RecentCompletionDTO;
@@ -124,6 +126,46 @@ public class TaskController {
         }
         
         return (task != null) ? ResponseEntity.ok(task) : ResponseEntity.notFound().build();
+    }
+
+    // Picking endpoints
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
+    @GetMapping("/picking/user/{userId}")
+    public ResponseEntity<List<PickingItemDTO>> getPickingItems(@PathVariable int userId) {
+        List<Task> tasks = taskService.getAllPickingTasksForViewing(userId);
+        List<PickingItemDTO> items = tasks.stream()
+                .map(task -> mapper.toPickingItemDTO(task, (long) userId))
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(items);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
+    @GetMapping("/picking/assigned/{userId}")
+    public ResponseEntity<List<PickingItemDTO>> getAssignedPickingItems(@PathVariable int userId) {
+        List<Task> tasks = taskService.getPickingTasksByUser(userId);
+        List<PickingItemDTO> items = tasks.stream()
+                .map(task -> mapper.toPickingItemDTO(task, (long) userId))
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(items);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
+    @GetMapping("/picking/statistics/{userId}")
+    public ResponseEntity<PickingStatisticsDTO> getPickingStatistics(@PathVariable int userId) {
+        return ResponseEntity.ok(taskService.getPickingStatistics(userId));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
+    @PostMapping("/{id}/complete-picking")
+    public ResponseEntity<Task> completePicking(
+            @PathVariable Long id,
+            @RequestParam int userId) {
+        try {
+            Task task = taskService.completePicking(id, userId);
+            return (task != null) ? ResponseEntity.ok(task) : ResponseEntity.notFound().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
 }

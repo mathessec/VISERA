@@ -52,3 +52,26 @@ export const completePutawayWithAllocation = async (taskId, allocations) => {
   });
   return response.data;
 };
+
+// Picking operations
+export const getPickingItems = async (userId) => {
+  const response = await api.get(`/api/tasks/picking/user/${userId}`);
+  return response.data;
+};
+
+export const getAssignedPickingItems = async (userId) => {
+  const response = await api.get(`/api/tasks/picking/assigned/${userId}`);
+  return response.data;
+};
+
+export const getPickingStatistics = async (userId) => {
+  const response = await api.get(`/api/tasks/picking/statistics/${userId}`);
+  return response.data;
+};
+
+export const completePicking = async (taskId, userId) => {
+  const response = await api.post(`/api/tasks/${taskId}/complete-picking`, null, {
+    params: { userId }
+  });
+  return response.data;
+};

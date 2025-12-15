@@ -269,6 +269,65 @@ public class EntityMapper {
         return dto;
     }
 
+    public PickingItemDTO toPickingItemDTO(Task task, Long currentUserId) {
+        PickingItemDTO dto = new PickingItemDTO();
+        dto.setId(task.getId());
+        
+        ShipmentItem shipmentItem = task.getShipmentItem();
+        dto.setShipmentItemId(shipmentItem.getId());
+        
+        Sku sku = shipmentItem.getSku();
+        dto.setSkuCode(sku.getSkuCode());
+        dto.setQuantity(shipmentItem.getQuantity());
+        
+        Product product = sku.getProduct();
+        dto.setProductName(product.getName());
+        dto.setCategory(product.getCategory());
+        
+        // Task status
+        String status = task.getInProgress() != null && task.getInProgress() ? "IN_PROGRESS" : task.getStatus();
+        dto.setStatus(status);
+        
+        // Suggested location details
+        if (task.getSuggestedBin() != null) {
+            Bin bin = task.getSuggestedBin();
+            dto.setSuggestedBinId(bin.getId());
+            dto.setSuggestedBinCode(bin.getCode());
+            
+            if (bin.getRack() != null) {
+                Rack rack = bin.getRack();
+                dto.setSuggestedRackName(rack.getName());
+                
+                if (rack.getZone() != null) {
+                    Zone zone = rack.getZone();
+                    dto.setSuggestedZoneId(zone.getId());
+                    dto.setSuggestedZoneName(zone.getName());
+                }
+            }
+        }
+        
+        dto.setSuggestedLocation(task.getSuggestedLocation());
+        
+        // Shipment information
+        Shipment shipment = shipmentItem.getShipment();
+        dto.setShipmentId(shipment.getId());
+        dto.setShipmentDeadline(shipment.getDeadline());
+        // Note: orderNumber and destination are not in Shipment entity, set to null for now
+        dto.setOrderNumber(null);
+        dto.setDestination(null);
+        
+        // Assignment information
+        if (task.getUser() != null) {
+            dto.setAssignedToUserId(task.getUser().getId());
+            dto.setAssignedToUserName(task.getUser().getName());
+            dto.setIsAssignedToMe(currentUserId != null && task.getUser().getId().equals(currentUserId));
+        } else {
+            dto.setIsAssignedToMe(false);
+        }
+        
+        return dto;
+    }
+
     public RecentCompletionDTO toRecentCompletionDTO(Task task) {
         RecentCompletionDTO dto = new RecentCompletionDTO();
         dto.setTaskId(task.getId());

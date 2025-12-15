@@ -1,73 +1,78 @@
 import { useState, useEffect } from 'react';
-import { Package, Scan, CheckCircle, MapPin } from 'lucide-react';
+import { Package, Clock, CheckCircle, Truck } from 'lucide-react';
 import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Badge from '../../components/common/Badge';
 import Loading from '../../components/common/Loading';
 import Alert from '../../components/common/Alert';
-import { getTasksByUser, updateTaskStatus } from '../../services/taskService';
+import SummaryCard from '../../components/picking/SummaryCard';
+import PickListItem from '../../components/picking/PickListItem';
+import PickingDetailModal from '../../components/picking/PickingDetailModal';
+import { getPickingItems, getPickingStatistics, completePicking } from '../../services/taskService';
 import { getUserId } from '../../services/authService';
+import { groupTasksByShipment } from '../../utils/pickingUtils';
 
 export default function Picking() {
-  const [tasks, setTasks] = useState([]);
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [scannedItems, setScannedItems] = useState([]);
-  const [scanInput, setScanInput] = useState('');
+  const [pickingItems, setPickingItems] = useState([]);
+  const [statistics, setStatistics] = useState(null);
+  const [selectedPickList, setSelectedPickList] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchTasks();
+    fetchData();
   }, []);
 
-  const fetchTasks = async () => {
+  const fetchData = async () => {
     try {
-      const userId = getUserId();
-      const tasksData = await getTasksByUser(parseInt(userId));
-      const pickingTasks = tasksData.filter(t => t.taskType === 'PICKING' && t.status !== 'COMPLETED');
-      setTasks(pickingTasks);
+      setLoading(true);
+      setError('');
+      const userId = parseInt(getUserId());
+      
+      const [itemsData, statsData] = await Promise.all([
+        getPickingItems(userId),
+        getPickingStatistics(userId)
+      ]);
+      
+      setPickingItems(itemsData);
+      setStatistics(statsData);
     } catch (err) {
-      setError('Failed to load picking tasks');
+      setError('Failed to load picking data');
+      console.error('Error fetching picking data:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleScan = () => {
-    if (!scanInput.trim()) return;
-
-    const newItem = {
-      id: Date.now(),
-      sku: scanInput,
-      scannedAt: new Date().toISOString(),
-      verified: true,
-    };
-
-    setScannedItems([...scannedItems, newItem]);
-    setScanInput('');
+  const handleStartPicking = (pickList) => {
+    setSelectedPickList(pickList);
   };
 
-  const handleCompletePicking = async () => {
-    if (!selectedTask) return;
-
+  const handleCompletePicking = async (taskId) => {
     try {
-      await updateTaskStatus(selectedTask.id, 'COMPLETED');
-      setSelectedTask(null);
-      setScannedItems([]);
-      fetchTasks();
+      const userId = parseInt(getUserId());
+      await completePicking(taskId, userId);
+      // Refresh data after completion
+      await fetchData();
     } catch (err) {
-      setError('Failed to complete picking task');
+      throw err; // Let the modal handle the error
     }
   };
 
-  if (loading) return <Loading text="Loading picking tasks..." />;
+  const handleCloseModal = () => {
+    setSelectedPickList(null);
+    fetchData(); // Refresh data when modal closes
+  };
+
+  if (loading) return <Loading text="Loading picking operations..." />;
+
+  // Group tasks by shipment
+  const pickLists = groupTasksByShipment(pickingItems);
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Picking Operations</h1>
-        <p className="text-gray-600 mt-1">Pick items for outbound shipments</p>
+        <h1 className="text-2xl font-bold text-gray-900">Outbound Picking</h1>
+        <p className="text-gray-600 mt-1">Pick and verify items for outbound shipments</p>
       </div>
 
       {error && (
@@ -76,116 +81,113 @@ export default function Picking() {
         </Alert>
       )}
 
-      {!selectedTask ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tasks.length === 0 ? (
-            <div className="col-span-full">
-              <Card>
+      {/* Summary Cards */}
+      {statistics && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <SummaryCard
+            title="Active Pick Lists"
+            value={statistics.activePickListsCount || 0}
+            icon={Package}
+            color="blue"
+          />
+          <SummaryCard
+            title="Items to Pick"
+            value={statistics.itemsToPickCount || 0}
+            icon={Clock}
+            color="orange"
+          />
+          <SummaryCard
+            title="Picked Today"
+            value={statistics.pickedTodayCount || 0}
+            icon={CheckCircle}
+            color="green"
+          />
+          <SummaryCard
+            title="Ready to Ship"
+            value={statistics.readyToShipCount || 0}
+            icon={Truck}
+            color="purple"
+          />
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Panel: Active Pick Lists */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Active Pick Lists</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {pickLists.length === 0 ? (
                 <div className="text-center py-12">
                   <Package size={48} className="mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-500">No picking tasks available</p>
+                  <p className="text-gray-500">No pick lists available</p>
                 </div>
-              </Card>
-            </div>
-          ) : (
-            tasks.map((task) => (
-              <Card key={task.id}>
-                <CardHeader>
-                  <CardTitle>Task #{task.id}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Badge variant="purple">PICKING</Badge>
-                    <Badge variant="yellow" className="ml-2">
-                      {task.status}
-                    </Badge>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <p>Shipment Item: #{task.shipmentItemId}</p>
-                  </div>
-                  <Button
-                    variant="primary"
-                    className="w-full"
-                    onClick={() => setSelectedTask(task)}
-                  >
-                    <Package size={20} className="mr-2" />
-                    Start Picking
-                  </Button>
-                </CardContent>
-              </Card>
-            ))
-          )}
+              ) : (
+                <div className="space-y-4">
+                  {pickLists.map((pickList) => (
+                    <PickListItem
+                      key={pickList.shipmentId}
+                      pickList={pickList}
+                      currentUserId={parseInt(getUserId())}
+                      onStartPicking={handleStartPicking}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      ) : (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Picking: Task #{selectedTask.id}</CardTitle>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSelectedTask(null);
-                  setScannedItems([]);
-                }}
-              >
-                Back to Tasks
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-              <p className="text-sm text-gray-600">Shipment Item ID</p>
-              <p className="font-semibold text-gray-900">#{selectedTask.shipmentItemId}</p>
-            </div>
 
-            <div className="flex gap-4">
-              <Input
-                placeholder="Scan SKU or bin location..."
-                value={scanInput}
-                onChange={(e) => setScanInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleScan()}
-                className="flex-1"
-              />
-              <Button variant="primary" onClick={handleScan}>
-                <Scan size={20} className="mr-2" />
-                Scan
-              </Button>
-            </div>
-
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {scannedItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-3 bg-green-50 border border-green-200 rounded-lg"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-600" size={20} />
-                      <span className="font-medium">{item.sku}</span>
-                    </div>
-                    <Badge variant="green">Picked</Badge>
+        {/* Right Panel: Getting Started */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Getting Started</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!selectedPickList ? (
+                <div className="text-center py-12">
+                  <Package size={64} className="mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-500 mb-2">Select a pick list to begin</p>
+                  <p className="text-sm text-gray-400">
+                    Choose a pick list from the left to start picking items
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h3 className="font-semibold text-gray-900 mb-2">
+                      {selectedPickList.shipmentId ? `PL-${new Date().getFullYear()}-${String(selectedPickList.shipmentId).padStart(3, '0')}` : 'Selected Pick List'}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {selectedPickList.destination || 'N/A'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {selectedPickList.tasks.length} items to pick
+                    </p>
                   </div>
+                  <p className="text-sm text-gray-600">
+                    Click "Start Picking" on the pick list card to begin the picking process.
+                  </p>
                 </div>
-              ))}
-            </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
-            {scannedItems.length > 0 && (
-              <div className="pt-4 border-t">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">
-                    Picked: {scannedItems.length} items
-                  </span>
-                  <Button variant="primary" onClick={handleCompletePicking}>
-                    <CheckCircle size={20} className="mr-2" />
-                    Complete Picking
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Picking Detail Modal */}
+      {selectedPickList && (
+        <PickingDetailModal
+          isOpen={!!selectedPickList}
+          onClose={handleCloseModal}
+          pickList={selectedPickList}
+          onComplete={handleCompletePicking}
+        />
       )}
     </div>
   );
 }
-
