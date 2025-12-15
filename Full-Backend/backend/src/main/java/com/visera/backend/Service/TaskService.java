@@ -1,5 +1,6 @@
 package com.visera.backend.Service;
 import com.visera.backend.DTOs.BinAllocation;
+import com.visera.backend.DTOs.PickingStatisticsDTO;
 import com.visera.backend.DTOs.PutawayStatisticsDTO;
 import com.visera.backend.DTOs.RecentCompletionDTO;
 import com.visera.backend.Entity.Task;
@@ -15,4 +16,10 @@ public interface TaskService {
     PutawayStatisticsDTO getPutawayStatistics(int userId);
     Task completePutaway(Long taskId, Long binId, Integer quantity);
     Task completePutawayWithAllocation(Long taskId, List<BinAllocation> allocations);
+    
+    // Picking operations
+    List<Task> getPickingTasksByUser(int userId);
+    List<Task> getAllPickingTasksForViewing(int userId);
+    PickingStatisticsDTO getPickingStatistics(int userId);
+    Task completePicking(Long taskId, int userId);
 }

@@ -151,12 +151,35 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
         User worker
     ) {
         try {
-            // Ensure this is an INBOUND shipment
             Shipment shipment = shipmentItem.getShipment();
-            if (shipment == null || !"INBOUND".equals(shipment.getShipmentType())) {
-                return buildErrorResponse("PUTAWAY tasks can only be created for INBOUND shipments");
+            if (shipment == null) {
+                return buildErrorResponse("Shipment not found for shipment item");
             }
 
+            // Handle OUTBOUND shipments - create PICKING task
+            if ("OUTBOUND".equals(shipment.getShipmentType())) {
+                return handleOutboundMatchedVerification(shipmentItem, sku, ocrResult, worker);
+            }
+            
+            // Handle INBOUND shipments - create PUTAWAY task
+            if ("INBOUND".equals(shipment.getShipmentType())) {
+                return handleInboundMatchedVerification(shipmentItem, sku, ocrResult, worker);
+            }
+
+            return buildErrorResponse("Unknown shipment type: " + shipment.getShipmentType());
+
+        } catch (Exception e) {
+            return buildErrorResponse("Failed to create task: " + e.getMessage());
+        }
+    }
+
+    private VerificationResponse handleInboundMatchedVerification(
+        ShipmentItem shipmentItem,
+        Sku sku,
+        OCRVerificationResult ocrResult,
+        User worker
+    ) {
+        try {
             // Use LocationAllocationService to get allocation plan
             LocationAllocationResult allocationResult = locationAllocationService
                 .allocateLocationWithOverflow(sku, shipmentItem.getQuantity());
@@ -210,6 +233,75 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
 
         } catch (Exception e) {
             return buildErrorResponse("Failed to create putaway task: " + e.getMessage());
+        }
+    }
+
+    private VerificationResponse handleOutboundMatchedVerification(
+        ShipmentItem shipmentItem,
+        Sku sku,
+        OCRVerificationResult ocrResult,
+        User worker
+    ) {
+        try {
+            // Find existing inventory stock for this SKU to suggest pick locations
+            List<InventoryStock> stockList = inventoryStockRepository.findBySkuId(sku.getId());
+            
+            if (stockList == null || stockList.isEmpty()) {
+                return buildMismatchResponse(
+                    "Verification matched but no inventory stock found for SKU. Cannot create picking task.",
+                    ocrResult,
+                    sku,
+                    null
+                );
+            }
+
+            // Find stock with sufficient quantity (prioritize bins with enough stock)
+            InventoryStock suggestedStock = stockList.stream()
+                .filter(stock -> stock.getQuantity() >= shipmentItem.getQuantity())
+                .findFirst()
+                .orElse(stockList.get(0)); // If no bin has enough, use first available (partial pick)
+
+            Bin suggestedBin = suggestedStock.getBin();
+            if (suggestedBin == null) {
+                return buildMismatchResponse(
+                    "Inventory stock found but bin location is missing. Manual assignment required.",
+                    ocrResult,
+                    sku,
+                    null
+                );
+            }
+
+            // Format location string
+            String suggestedLocation = formatBinLocation(suggestedBin);
+            
+            // Get zone from bin's rack
+            Zone suggestedZone = null;
+            if (suggestedBin.getRack() != null && suggestedBin.getRack().getZone() != null) {
+                suggestedZone = suggestedBin.getRack().getZone();
+            }
+
+            // Create PICKING task - assigned to the worker who verified
+            Task pickingTask = Task.builder()
+                .user(worker) // Assign to verifying worker
+                .shipmentItem(shipmentItem)
+                .taskType("PICKING")
+                .status("PENDING")
+                .suggestedBin(suggestedBin)
+                .suggestedLocation(suggestedLocation)
+                .suggestedZone(suggestedZone)
+                .inProgress(false)
+                .build();
+
+            taskService.createTask(pickingTask);
+
+            // Update shipment item status to VERIFIED
+            shipmentItem.setStatus("VERIFIED");
+            shipmentItemService.updateShipmentItem(shipmentItem.getId().intValue(), shipmentItem);
+
+            return buildSuccessResponse(ocrResult, sku, suggestedLocation);
+
+        } catch (Exception e) {
+            return buildErrorResponse("Failed to create picking task: " + e.getMessage());
         }
     }
 

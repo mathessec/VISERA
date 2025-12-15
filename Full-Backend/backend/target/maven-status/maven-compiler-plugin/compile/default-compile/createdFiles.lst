@@ -6,6 +6,7 @@ com\visera\backend\DTOs\PutawayStatisticsDTO$PutawayStatisticsDTOBuilder.class
 com\visera\backend\Repository\TaskRepository.class
 com\visera\backend\security\CustomUserDetailsService.class
 com\visera\backend\Service\LocationAllocationService.class
+com\visera\backend\DTOs\PickingStatisticsDTO.class
 com\visera\backend\Repository\BinRepository.class
 com\visera\backend\Repository\UserRepository.class
 com\visera\backend\Service\ShipmentWorkerServiceImpl.class
@@ -58,6 +59,7 @@ com\visera\backend\Repository\ZoneRepository.class
 com\visera\backend\DTOs\OCRVerificationResult$ExtractedData.class
 com\visera\backend\Entity\Product.class
 com\visera\backend\Controller\InventoryStockController.class
+com\visera\backend\DTOs\PickingStatisticsDTO$PickingStatisticsDTOBuilder.class
 com\visera\backend\Repository\VerificationLogRepository.class
 com\visera\backend\security\JwtFilter.class
 com\visera\backend\DTOs\ShipmentDTO.class
@@ -141,6 +143,7 @@ com\visera\backend\DTOs\RecentCompletionDTO$RecentCompletionDTOBuilder.class
 com\visera\backend\Entity\Sku$SkuBuilder.class
 com\visera\backend\Repository\ApprovalRepository.class
 com\visera\backend\DTOs\InventoryStockDTO.class
+com\visera\backend\DTOs\PickingItemDTO.class
 com\visera\backend\DTOs\TaskDTO.class
 com\visera\backend\Entity\Sku.class
 com\visera\backend\security\AuthManagerConfig.class
@@ -153,6 +156,7 @@ com\visera\backend\Service\SkuServiceImpl.class
 com\visera\backend\DTOs\ReportDTO$RoleDistribution$RoleDistributionBuilder.class
 com\visera\backend\DTOs\ReportDTO$RoleDistribution.class
 com\visera\backend\Controller\VerificationLogController.class
+com\visera\backend\DTOs\PickingItemDTO$PickingItemDTOBuilder.class
 com\visera\backend\mapper\EntityMapper$1.class
 com\visera\backend\Service\RackServiceImpl.class
 com\visera\backend\Service\ProductServiceImpl.class
