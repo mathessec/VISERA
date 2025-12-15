@@ -155,6 +155,16 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getPickingStatistics(userId));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
+    @GetMapping("/picking/dispatched/{userId}")
+    public ResponseEntity<List<PickingItemDTO>> getDispatchedPickingItems(@PathVariable int userId) {
+        List<Task> tasks = taskService.getDispatchedPickingTasks(userId);
+        List<PickingItemDTO> items = tasks.stream()
+                .map(task -> mapper.toPickingItemDTO(task, (long) userId))
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(items);
+    }
+
     @PreAuthorize("hasAnyRole('ADMIN', 'WORKER')")
     @PostMapping("/{id}/complete-picking")
     public ResponseEntity<?> completePicking(

@@ -71,5 +71,10 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             @Param("userId") Long userId,
             @Param("taskType") String taskType,
             @Param("status") String status);
+
+    @Query("SELECT t FROM Task t WHERE t.taskType = :taskType AND t.status = :status AND t.shipmentItem.shipment.shipmentType = 'OUTBOUND'")
+    List<Task> findCompletedPickingTasksForOutbound(
+            @Param("taskType") String taskType,
+            @Param("status") String status);
 }
 

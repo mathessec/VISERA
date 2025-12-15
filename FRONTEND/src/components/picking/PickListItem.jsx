@@ -1,11 +1,11 @@
-import { Package, Clock } from 'lucide-react';
+import { Package, Clock, Truck } from 'lucide-react';
 import Card, { CardContent } from '../common/Card';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 import { Progress } from '../common/Progress';
 import { formatPickListId, formatDeadlineTime, calculatePriority, calculateProgress } from '../../utils/pickingUtils';
 
-export default function PickListItem({ pickList, currentUserId, onStartPicking }) {
+export default function PickListItem({ pickList, currentUserId, onStartPicking, isDispatched = false }) {
   const progress = calculateProgress(pickList);
   const priority = calculatePriority(pickList.shipmentDeadline);
   // Check if any task in this pick list is assigned to current user
@@ -51,15 +51,22 @@ export default function PickListItem({ pickList, currentUserId, onStartPicking }
           <Progress value={progress.percentage} className="h-2" />
         </div>
         
-        <Button
-          variant={isAssigned ? "primary" : "outline"}
-          className="w-full"
-          onClick={() => onStartPicking(pickList)}
-          disabled={!isAssigned}
-        >
-          <Package size={18} className="mr-2" />
-          {isAssigned ? "Start Picking" : "Assigned to Another Worker"}
-        </Button>
+        {isDispatched ? (
+          <div className="w-full p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-center gap-2">
+            <Truck size={18} className="text-green-600" />
+            <span className="text-green-700 font-medium">Ready to Ship</span>
+          </div>
+        ) : (
+          <Button
+            variant={isAssigned ? "primary" : "outline"}
+            className="w-full"
+            onClick={() => onStartPicking(pickList)}
+            disabled={!isAssigned}
+          >
+            <Package size={18} className="mr-2" />
+            {isAssigned ? "Start Picking" : "Assigned to Another Worker"}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

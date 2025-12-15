@@ -20,6 +20,7 @@ public interface TaskService {
     // Picking operations
     List<Task> getPickingTasksByUser(int userId);
     List<Task> getAllPickingTasksForViewing(int userId);
+    List<Task> getDispatchedPickingTasks(int userId);
     PickingStatisticsDTO getPickingStatistics(int userId);
     Task completePicking(Long taskId, int userId);
 }
