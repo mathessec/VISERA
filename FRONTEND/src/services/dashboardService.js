@@ -1,7 +1,7 @@
 import { getAllShipments } from './shipmentService';
 import { getPendingApprovals } from './approvalService';
 import { getAllUsers } from './userService';
-import { getTasksByUser } from './taskService';
+import { getTasksByUser, getPutawayStatistics, getPickingStatistics, getPickingItems, getPutawayItems } from './taskService';
 import { getItemsByShipment } from './shipmentItemService';
 
 /**
@@ -390,6 +390,362 @@ export const getSupervisorDashboardMetrics = async () => {
   } catch (error) {
     console.error('Error fetching dashboard metrics:', error);
     throw error;
+  }
+};
+
+/**
+ * Get worker dashboard metrics and data
+ * Aggregates data from multiple services to provide worker dashboard statistics
+ */
+export const getWorkerDashboardMetrics = async (userId) => {
+  try {
+    // Validate userId
+    if (!userId || (typeof userId !== 'number' && isNaN(parseInt(userId, 10)))) {
+      console.error('Invalid userId provided:', userId);
+      // Return empty dashboard data
+      return {
+        metrics: {
+          pendingInbound: 0,
+          pendingOutbound: 0,
+          pendingPutaway: 0,
+          completedToday: 0,
+        },
+        inboundTasks: [],
+        outboundTasks: [],
+      };
+    }
+
+    // Fetch all required data in parallel, but handle errors gracefully
+    const [shipmentsResult, tasksResult, putawayStatsResult, pickingStatsResult, pickingItemsResult, putawayItemsResult] = await Promise.allSettled([
+      getAllShipments(),
+      getTasksByUser(userId),
+      getPutawayStatistics(userId),
+      getPickingStatistics(userId),
+      getPickingItems(userId),
+      getPutawayItems(userId),
+    ]);
+
+    // Extract successful results, defaulting to empty arrays/objects on failure
+    const shipments = shipmentsResult.status === 'fulfilled' ? shipmentsResult.value : [];
+    const tasks = tasksResult.status === 'fulfilled' ? tasksResult.value : [];
+    const putawayStats = putawayStatsResult.status === 'fulfilled' ? putawayStatsResult.value : null;
+    const pickingStats = pickingStatsResult.status === 'fulfilled' ? pickingStatsResult.value : null;
+    const pickingItems = pickingItemsResult.status === 'fulfilled' ? pickingItemsResult.value : [];
+    const putawayItems = putawayItemsResult.status === 'fulfilled' ? putawayItemsResult.value : [];
+
+    // Log errors for debugging (but don't fail the entire dashboard)
+    if (shipmentsResult.status === 'rejected') {
+      console.error('Error fetching shipments:', shipmentsResult.reason);
+    }
+    if (tasksResult.status === 'rejected') {
+      console.error('Error fetching tasks:', tasksResult.reason);
+    }
+    if (putawayStatsResult.status === 'rejected') {
+      console.error('Error fetching putaway statistics:', putawayStatsResult.reason);
+    }
+    if (pickingStatsResult.status === 'rejected') {
+      console.error('Error fetching picking statistics:', pickingStatsResult.reason);
+    }
+    if (pickingItemsResult.status === 'rejected') {
+      console.error('Error fetching picking items:', pickingItemsResult.reason);
+    }
+    if (putawayItemsResult.status === 'rejected') {
+      console.error('Error fetching putaway items:', putawayItemsResult.reason);
+    }
+
+    // Ensure userId is a number for comparison
+    const userIdNum = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+
+    // Filter shipments assigned to this worker
+    const assignedShipments = shipments.filter((shipment) => {
+      if (!shipment.assignedWorkers || !Array.isArray(shipment.assignedWorkers)) {
+        return false;
+      }
+      // Compare with type coercion to handle both string and number IDs
+      return shipment.assignedWorkers.some((worker) => {
+        const workerId = typeof worker.id === 'string' ? parseInt(worker.id, 10) : worker.id;
+        return workerId === userIdNum;
+      });
+    });
+
+    // Calculate metrics
+    // Pending Inbound: Count of INBOUND shipments assigned to worker with status != COMPLETED
+    const pendingInbound = assignedShipments.filter(
+      (s) => s.shipmentType === 'INBOUND' && s.status && s.status !== 'COMPLETED'
+    ).length;
+
+    // Pending Outbound: Count of ALL OUTBOUND shipments with status != COMPLETED
+    // (Workers can work on any outbound shipment, not just assigned ones - consistent with Outbound Verification page)
+    const allOutboundShipments = shipments.filter(
+      (s) => s.shipmentType === 'OUTBOUND' && s.status && s.status !== 'COMPLETED'
+    );
+    
+    // Count unique shipments with pending picking tasks using pickingItems (which have shipmentId)
+    const pickingTasksByShipment = new Set();
+    pickingItems
+      .filter((item) => item.status && item.status !== 'COMPLETED' && item.shipmentId)
+      .forEach((item) => {
+        pickingTasksByShipment.add(item.shipmentId);
+      });
+    
+    // Pending outbound is the max of all outbound shipments or shipments with picking tasks
+    // This ensures we count all available outbound shipments, not just assigned ones
+    const pendingOutbound = Math.max(
+      allOutboundShipments.length,
+      pickingTasksByShipment.size
+    );
+
+    // Pending Putaway: From putaway statistics
+    const pendingPutaway = putawayStats
+      ? (putawayStats.pendingCount || 0) + (putawayStats.inProgressCount || 0)
+      : 0;
+
+    // Completed Today: Sum of completed putaway tasks today + completed picking tasks today
+    const completedToday = (putawayStats?.completedTodayCount || 0) + (pickingStats?.pickedTodayCount || 0);
+
+    // Format inbound tasks list (top 2-3 INBOUND shipments with pending tasks)
+    const inboundShipments = assignedShipments
+      .filter((s) => s.shipmentType === 'INBOUND' && s.status && s.status !== 'COMPLETED')
+      .sort((a, b) => {
+        // Sort by deadline (earliest first), then by createdAt
+        if (a.deadline && b.deadline) {
+          return new Date(a.deadline) - new Date(b.deadline);
+        }
+        if (a.createdAt && b.createdAt) {
+          return new Date(a.createdAt) - new Date(b.createdAt);
+        }
+        return 0;
+      })
+      .slice(0, 3);
+
+    const inboundTasks = inboundShipments.map((shipment) => {
+      try {
+        // Calculate priority based on deadline
+        let priority = 'Low';
+        if (shipment.deadline) {
+          try {
+            const deadline = new Date(shipment.deadline);
+            if (!isNaN(deadline.getTime())) {
+              const now = new Date();
+              const hoursUntilDeadline = (deadline - now) / (1000 * 60 * 60);
+              
+              if (hoursUntilDeadline < 0 || hoursUntilDeadline <= 2) {
+                priority = 'High';
+              } else if (hoursUntilDeadline <= 24) {
+                priority = 'Medium';
+              }
+            }
+          } catch (e) {
+            console.warn('Error parsing deadline for shipment:', shipment.id, e);
+          }
+        }
+
+        // Format expected time
+        let expectedTime = 'N/A';
+        if (shipment.deadline) {
+          try {
+            const deadline = new Date(shipment.deadline);
+            if (!isNaN(deadline.getTime())) {
+              expectedTime = deadline.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              });
+            }
+          } catch (e) {
+            console.warn('Error formatting deadline time:', e);
+          }
+        } else if (shipment.createdAt) {
+          try {
+            const createdAt = new Date(shipment.createdAt);
+            if (!isNaN(createdAt.getTime())) {
+              expectedTime = createdAt.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              });
+            }
+          } catch (e) {
+            console.warn('Error formatting created time:', e);
+          }
+        }
+
+        // Get vendor/company name - try to extract from shipment data
+        // Since ShipmentDTO doesn't have vendor field, we'll use a placeholder or try to get from createdBy
+        const vendor = shipment.createdBy?.name || 'Vendor';
+
+        return {
+          id: `IB-${shipment.id}`,
+          shipmentId: `SH-${String(shipment.id).padStart(6, '0')}`,
+          vendor: vendor,
+          items: shipment.packageCount || 0,
+          priority: priority,
+          expectedTime: expectedTime,
+          status: shipment.status || 'PENDING',
+        };
+      } catch (error) {
+        console.error('Error processing inbound shipment:', shipment.id, error);
+        // Return a safe default object
+        return {
+          id: `IB-${shipment.id}`,
+          shipmentId: `SH-${String(shipment.id).padStart(6, '0')}`,
+          vendor: 'Vendor',
+          items: 0,
+          priority: 'Low',
+          expectedTime: 'N/A',
+          status: shipment.status || 'PENDING',
+        };
+      }
+    });
+
+    // Format outbound tasks list (top 2-3 OUTBOUND shipments with pending picking tasks)
+    // Use pickingItems to get shipment information since they have shipmentId
+    const pickingItemsByShipment = new Map();
+    pickingItems
+      .filter((item) => item.status && item.status !== 'COMPLETED' && item.shipmentId)
+      .forEach((item) => {
+        if (!pickingItemsByShipment.has(item.shipmentId)) {
+          pickingItemsByShipment.set(item.shipmentId, {
+            shipmentId: item.shipmentId,
+            deadline: item.shipmentDeadline,
+            destination: item.destination,
+            items: [],
+          });
+        }
+        pickingItemsByShipment.get(item.shipmentId).items.push(item);
+      });
+
+    // Get shipment details for these shipments
+    // Use ALL outbound shipments (not just assigned ones) to match Outbound Verification page behavior
+    const outboundShipmentIds = Array.from(pickingItemsByShipment.keys());
+    const outboundShipmentsWithTasks = allOutboundShipments
+      .filter((s) => 
+        s.status && 
+        s.status !== 'COMPLETED'
+        // Include all outbound shipments (not just those with picking tasks)
+      )
+      .sort((a, b) => {
+        // Sort by deadline (earliest first)
+        if (a.deadline && b.deadline) {
+          return new Date(a.deadline) - new Date(b.deadline);
+        }
+        if (a.createdAt && b.createdAt) {
+          return new Date(a.createdAt) - new Date(b.createdAt);
+        }
+        return 0;
+      })
+      .slice(0, 3);
+
+    const outboundTasks = outboundShipmentsWithTasks.map((shipment) => {
+      try {
+        const pickingData = pickingItemsByShipment.get(shipment.id);
+        
+        // Calculate priority based on deadline
+        let priority = 'Low';
+        let deadlineDate = null;
+        if (shipment.deadline) {
+          try {
+            deadlineDate = new Date(shipment.deadline);
+            if (isNaN(deadlineDate.getTime())) {
+              deadlineDate = null;
+            }
+          } catch (e) {
+            console.warn('Error parsing shipment deadline:', e);
+          }
+        }
+        if (!deadlineDate && pickingData?.deadline) {
+          try {
+            deadlineDate = new Date(pickingData.deadline);
+            if (isNaN(deadlineDate.getTime())) {
+              deadlineDate = null;
+            }
+          } catch (e) {
+            console.warn('Error parsing picking data deadline:', e);
+          }
+        }
+        
+        if (deadlineDate) {
+          const now = new Date();
+          const hoursUntilDeadline = (deadlineDate - now) / (1000 * 60 * 60);
+          
+          if (hoursUntilDeadline < 0 || hoursUntilDeadline <= 2) {
+            priority = 'High';
+          } else if (hoursUntilDeadline <= 24) {
+            priority = 'Medium';
+          }
+        }
+
+        // Format deadline
+        let deadline = 'N/A';
+        if (deadlineDate) {
+          try {
+            deadline = deadlineDate.toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+            });
+          } catch (e) {
+            console.warn('Error formatting deadline:', e);
+          }
+        }
+
+        // Get customer/destination - use from pickingData or shipment
+        const customer = pickingData?.destination || shipment.assignedTo?.name || 'Customer';
+
+        // Count items - use picking items count or packageCount
+        const items = pickingData?.items?.length || shipment.packageCount || 0;
+
+        // Determine status
+        const status = pickingData?.items?.length > 0 ? 'Ready to Pick' : 'Assigned';
+
+        return {
+          id: `OB-${shipment.id}`,
+          orderId: `ORD-${String(shipment.id).padStart(4, '0')}`,
+          customer: customer,
+          items: items,
+          priority: priority,
+          deadline: deadline,
+          status: status,
+        };
+      } catch (error) {
+        console.error('Error processing outbound shipment:', shipment.id, error);
+        // Return a safe default object
+        return {
+          id: `OB-${shipment.id}`,
+          orderId: `ORD-${String(shipment.id).padStart(4, '0')}`,
+          customer: 'Customer',
+          items: shipment.packageCount || 0,
+          priority: 'Low',
+          deadline: 'N/A',
+          status: shipment.status || 'PENDING',
+        };
+      }
+    });
+
+    // Ensure we always return valid data structure
+    return {
+      metrics: {
+        pendingInbound: pendingInbound || 0,
+        pendingOutbound: pendingOutbound || 0,
+        pendingPutaway: pendingPutaway || 0,
+        completedToday: completedToday || 0,
+      },
+      inboundTasks: inboundTasks || [],
+      outboundTasks: outboundTasks || [],
+    };
+  } catch (error) {
+    console.error('Error fetching worker dashboard metrics:', error);
+    // Return empty dashboard data instead of throwing to prevent UI crash
+    return {
+      metrics: {
+        pendingInbound: 0,
+        pendingOutbound: 0,
+        pendingPutaway: 0,
+        completedToday: 0,
+      },
+      inboundTasks: [],
+      outboundTasks: [],
+    };
   }
 };
 

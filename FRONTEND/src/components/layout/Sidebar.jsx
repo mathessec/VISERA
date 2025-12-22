@@ -22,6 +22,7 @@ const menuByRole = {
   SUPERVISOR: [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/supervisor/dashboard' },
     { name: 'Approvals', icon: CheckSquare, path: '/supervisor/approvals' },
+    { name: 'Issues', icon: AlertCircle, path: '/supervisor/issues' },
     { name: 'Shipment Monitoring', icon: ShoppingCart, path: '/supervisor/shipments' },
     { name: 'Worker Monitoring', icon: Monitor, path: '/supervisor/workers' },
     { name: 'Inventory', icon: Package2, path: '/supervisor/stock' },

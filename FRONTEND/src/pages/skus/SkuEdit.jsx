@@ -277,8 +277,7 @@ export default function SkuEdit() {
                   <Input
                     label="Weight (kg)"
                     name="weight"
-                    type="number"
-                    step="0.01"
+                    type="text"
                     value={formData.weight}
                     onChange={handleChange}
                     placeholder="e.g., 2.5"

@@ -62,15 +62,29 @@ public class EntityMapper {
     }
 
     public ShipmentItemDTO toShipmentItemDTO(ShipmentItem item) {
+        if (item == null) {
+            return null;
+        }
+        
         ShipmentItemDTO dto = new ShipmentItemDTO();
         dto.setId(item.getId());
-        dto.setShipmentId(item.getShipment().getId());
-        dto.setSkuId(item.getSku().getId());
+        
+        if (item.getShipment() != null) {
+            dto.setShipmentId(item.getShipment().getId());
+        }
+        
+        if (item.getSku() != null) {
+            dto.setSkuId(item.getSku().getId());
+            dto.setSkuCode(item.getSku().getSkuCode());
+            
+            if (item.getSku().getProduct() != null) {
+                dto.setProductName(item.getSku().getProduct().getName());
+                dto.setProductCode(item.getSku().getProduct().getProductCode());
+            }
+        }
+        
         dto.setQuantity(item.getQuantity());
         dto.setStatus(item.getStatus());
-        dto.setSkuCode(item.getSku().getSkuCode());
-        dto.setProductName(item.getSku().getProduct().getName());
-        dto.setProductCode(item.getSku().getProduct().getProductCode());
         return dto;
     }
 
@@ -370,6 +384,45 @@ public class EntityMapper {
         
         // Use completedAt if available, otherwise use createdAt
         dto.setCompletedAt(task.getCompletedAt() != null ? task.getCompletedAt() : task.getCreatedAt());
+        
+        return dto;
+    }
+
+    public IssueDTO toIssueDTO(Issue issue) {
+        IssueDTO dto = new IssueDTO();
+        
+        // Basic information
+        dto.setId(issue.getId());
+        dto.setIssueType(issue.getIssueType());
+        dto.setDescription(issue.getDescription());
+        dto.setStatus(issue.getStatus());
+        dto.setCreatedAt(issue.getCreatedAt());
+        
+        // Shipment information
+        if (issue.getShipment() != null) {
+            dto.setShipmentId(issue.getShipment().getId());
+        }
+        
+        // Reporter information
+        User reportedBy = issue.getReportedBy();
+        if (reportedBy != null) {
+            dto.setReportedById(reportedBy.getId());
+            dto.setReportedByName(reportedBy.getName());
+            dto.setReportedByEmail(reportedBy.getEmail());
+        }
+        
+        // Acknowledgment information
+        User acknowledgedBy = issue.getAcknowledgedBy();
+        if (acknowledgedBy != null) {
+            dto.setAcknowledgedById(acknowledgedBy.getId());
+            dto.setAcknowledgedByName(acknowledgedBy.getName());
+        }
+        dto.setAcknowledgedAt(issue.getAcknowledgedAt());
+        
+        // SKU mismatch details
+        dto.setExpectedSku(issue.getExpectedSku());
+        dto.setDetectedSku(issue.getDetectedSku());
+        dto.setConfidence(issue.getConfidence());
         
         return dto;
     }

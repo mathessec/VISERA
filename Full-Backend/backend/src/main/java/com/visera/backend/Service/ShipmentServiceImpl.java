@@ -96,5 +96,20 @@ public class ShipmentServiceImpl implements ShipmentService {
         shipment.setAssignedTo(user);
         return repo.save(shipment);
     }
+
+    @Override
+    public List<Shipment> getShipmentsByAssignedWorker(Long workerId) {
+        User worker = userRepository.findById(workerId)
+                .orElseThrow(() -> new RuntimeException("Worker not found with id: " + workerId));
+        
+        // Get all shipments assigned to this worker via ShipmentWorker
+        List<com.visera.backend.Entity.ShipmentWorker> assignments = shipmentWorkerRepository.findByWorker(worker);
+        
+        // Extract shipments from assignments
+        return assignments.stream()
+                .map(com.visera.backend.Entity.ShipmentWorker::getShipment)
+                .filter(shipment -> shipment != null)
+                .collect(java.util.stream.Collectors.toList());
+    }
 }
 
