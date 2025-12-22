@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AlertCircle, Send } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -6,20 +6,52 @@ import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import Alert from '../../components/common/Alert';
 import Loading from '../../components/common/Loading';
-import { createVerificationLog } from '../../services/verificationLogService';
+import { createIssue } from '../../services/issueService';
+import { getAssignedShipments } from '../../services/shipmentService';
 
 export default function Issues() {
   const [loading, setLoading] = useState(false);
+  const [loadingShipments, setLoadingShipments] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [shipments, setShipments] = useState([]);
   const [formData, setFormData] = useState({
-    shipmentItemId: '',
+    shipmentId: '',
     issueType: '',
     expectedSku: '',
     detectedSku: '',
     description: '',
     confidence: '',
   });
+
+  useEffect(() => {
+    fetchShipments();
+  }, []);
+
+  const fetchShipments = async () => {
+    try {
+      setLoadingShipments(true);
+      console.log('=== Fetching assigned shipments ===');
+      const shipmentList = await getAssignedShipments();
+      console.log('Fetched shipments:', shipmentList);
+      console.log('Number of shipments:', shipmentList?.length || 0);
+      if (shipmentList && shipmentList.length > 0) {
+        console.log('First shipment:', shipmentList[0]);
+      }
+      setShipments(shipmentList || []);
+    } catch (err) {
+      console.error('=== ERROR fetching shipments ===');
+      console.error('Error:', err);
+      console.error('Error message:', err.message);
+      console.error('Error response:', err.response);
+      console.error('Error response data:', err.response?.data);
+      console.error('Error response status:', err.response?.status);
+      setShipments([]);
+      // Don't show error to user, just log it - shipment is optional
+    } finally {
+      setLoadingShipments(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,18 +66,36 @@ export default function Issues() {
     setLoading(true);
 
     try {
-      await createVerificationLog({
-        shipmentItemId: parseInt(formData.shipmentItemId),
-        expectedSku: formData.expectedSku,
-        detectedSku: formData.detectedSku,
-        confidence: formData.confidence ? parseFloat(formData.confidence) : null,
-        mismatch: formData.issueType === 'MISMATCH',
+      const issueData = {
+        issueType: formData.issueType,
         description: formData.description,
-      });
+      };
+
+      // Add shipment if provided
+      if (formData.shipmentId) {
+        issueData.shipment = {
+          id: parseInt(formData.shipmentId)
+        };
+      }
+
+      // Add SKU mismatch details if issue type is MISMATCH
+      if (formData.issueType === 'MISMATCH') {
+        if (formData.expectedSku) {
+          issueData.expectedSku = formData.expectedSku;
+        }
+        if (formData.detectedSku) {
+          issueData.detectedSku = formData.detectedSku;
+        }
+        if (formData.confidence) {
+          issueData.confidence = parseFloat(formData.confidence) / 100; // Convert percentage to decimal
+        }
+      }
+
+      const createdIssue = await createIssue(issueData);
 
       setSuccess(true);
       setFormData({
-        shipmentItemId: '',
+        shipmentId: '',
         issueType: '',
         expectedSku: '',
         detectedSku: '',
@@ -74,22 +124,34 @@ export default function Issues() {
 
       {success && (
         <Alert variant="success" onClose={() => setSuccess(false)}>
-          Issue reported successfully!
+          Issue reported successfully! Status: OPEN
         </Alert>
       )}
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Shipment Item ID"
-              name="shipmentItemId"
-              type="number"
-              value={formData.shipmentItemId}
-              onChange={handleChange}
-              required
-              placeholder="Enter shipment item ID"
-            />
+            <div>
+              <Select
+                label="Shipment"
+                name="shipmentId"
+                value={formData.shipmentId}
+                onChange={handleChange}
+                disabled={loadingShipments}
+                options={[
+                  { value: '', label: loadingShipments ? 'Loading...' : 'Select shipment (optional)' },
+                  ...shipments.map(shipment => ({
+                    value: shipment.id.toString(),
+                    label: `Shipment #${shipment.id} - ${shipment.shipmentType || 'N/A'} - ${shipment.status || 'N/A'}`
+                  }))
+                ]}
+              />
+              {!loadingShipments && shipments.length === 0 && (
+                <p className="mt-1 text-sm text-amber-600">
+                  No shipments assigned to you. Please contact your supervisor to get assigned shipments.
+                </p>
+              )}
+            </div>
 
             <Select
               label="Issue Type"
@@ -165,7 +227,7 @@ export default function Issues() {
               variant="outline"
               onClick={() => {
                 setFormData({
-                  shipmentItemId: '',
+                  shipmentId: '',
                   issueType: '',
                   expectedSku: '',
                   detectedSku: '',

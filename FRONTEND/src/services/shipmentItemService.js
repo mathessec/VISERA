@@ -25,6 +25,11 @@ export const deleteShipmentItem = async (id) => {
   return response.data;
 };
 
+export const getAssignedShipmentItems = async () => {
+  const response = await api.get('/api/shipment-items/worker/assigned');
+  return response.data;
+};
+
 
 
 

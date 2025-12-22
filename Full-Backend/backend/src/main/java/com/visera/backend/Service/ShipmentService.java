@@ -11,4 +11,7 @@ public interface ShipmentService {
 
     // Assign a shipment to a user
     Shipment assignShipment(int shipmentId, int userId);
+    
+    // Get shipments assigned to a worker
+    List<Shipment> getShipmentsByAssignedWorker(Long workerId);
 }

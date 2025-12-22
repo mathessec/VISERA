@@ -18,6 +18,7 @@ com\visera\backend\DTOs\VerificationResponse$VerificationDetails$VerificationDet
 com\visera\backend\DTOs\LocationAllocationResult$LocationAllocationResultBuilder.class
 com\visera\backend\Service\AuthService.class
 com\visera\backend\Entity\VerificationLog$VerificationLogBuilder.class
+com\visera\backend\Repository\IssueRepository.class
 com\visera\backend\Repository\SkuRepository.class
 com\visera\backend\DTOs\PutawayItemDTO.class
 com\visera\backend\Entity\Approval$ApprovalBuilder.class
@@ -29,6 +30,7 @@ com\visera\backend\Controller\RackController.class
 com\visera\backend\Service\ApprovalService.class
 com\visera\backend\Service\UserService.class
 com\visera\backend\Entity\Task$TaskBuilder.class
+com\visera\backend\DTOs\IssueDTO.class
 com\visera\backend\Entity\ShipmentWorker.class
 com\visera\backend\Entity\Shipment.class
 com\visera\backend\Entity\Shipment$ShipmentBuilder.class
@@ -41,7 +43,9 @@ com\visera\backend\Entity\Rack.class
 com\visera\backend\Entity\Rack$RackBuilder.class
 com\visera\backend\DTOs\VerificationSummaryDTO$VerificationSummaryDTOBuilder.class
 com\visera\backend\DTOs\PutawayItemDTO$PutawayItemDTOBuilder.class
+com\visera\backend\Entity\Issue$IssueBuilder.class
 com\visera\backend\Entity\Product$ProductBuilder.class
+com\visera\backend\Controller\IssueController.class
 com\visera\backend\Controller\ApprovalController.class
 com\visera\backend\DTOs\VerificationResponse$VerificationResponseBuilder.class
 com\visera\backend\Service\ShipmentWorkerService.class
@@ -52,6 +56,7 @@ com\visera\backend\Entity\Task.class
 com\visera\backend\Entity\ShipmentWorker$ShipmentWorkerBuilder.class
 com\visera\backend\Controller\ShipmentController.class
 com\visera\backend\DTOs\VerificationResponse$VerificationDetails.class
+com\visera\backend\DTOs\IssueDTO$IssueDTOBuilder.class
 com\visera\backend\Service\LocationAllocationServiceImpl$BinWithCapacity.class
 com\visera\backend\DTOs\NotificationDTO.class
 com\visera\backend\DTOs\VerificationDTO$VerificationDTOBuilder.class
@@ -101,7 +106,9 @@ com\visera\backend\DTOs\OCRVerificationResult$OCRVerificationResultBuilder.class
 com\visera\backend\Service\ShipmentItemService.class
 com\visera\backend\Entity\ShipmentItem.class
 com\visera\backend\Controller\UserController.class
+com\visera\backend\Service\IssueService.class
 com\visera\backend\DTOs\BinWithStatusDTO.class
+com\visera\backend\Service\IssueServiceImpl.class
 com\visera\backend\DTOs\BinUpdateDTO.class
 com\visera\backend\DTOs\RegisterUserDTO.class
 com\visera\backend\DTOs\VerificationSummaryDTO.class
@@ -129,6 +136,7 @@ com\visera\backend\Service\VerificationLogService.class
 com\visera\backend\Controller\InboundVerificationController.class
 com\visera\backend\DTOs\LoginResponse.class
 com\visera\backend\DTOs\SkuDTO.class
+com\visera\backend\Entity\Issue.class
 com\visera\backend\mapper\EntityMapper.class
 com\visera\backend\Controller\BinController.class
 com\visera\backend\DTOs\RackWithBinsDTO.class

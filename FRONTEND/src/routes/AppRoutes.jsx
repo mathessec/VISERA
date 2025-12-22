@@ -13,6 +13,7 @@ import VerificationLogs from "../pages/admin/VerificationLogs";
 
 // Supervisor pages
 import Approvals from "../pages/supervisor/Approvals";
+import SupervisorIssues from "../pages/supervisor/Issues";
 import SupervisorReports from "../pages/supervisor/Reports";
 import SupervisorDashboard from "../pages/supervisor/SupervisorDashboard";
 import SupervisorShipments from "../pages/supervisor/SupervisorShipments";
@@ -164,6 +165,16 @@ export default function AppRoutes() {
             <ProtectedRoute allowedRoles={["SUPERVISOR"]}>
               <Layout>
                 <SupervisorReports />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supervisor/issues"
+          element={
+            <ProtectedRoute allowedRoles={["SUPERVISOR"]}>
+              <Layout>
+                <SupervisorIssues />
               </Layout>
             </ProtectedRoute>
           }

@@ -1,60 +1,91 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PackageSearch, Truck, MapPin, CheckCircle } from 'lucide-react';
 import { StatsCard } from '../../components/shared/StatsCard';
 import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
+import Loading from '../../components/common/Loading';
+import Alert from '../../components/common/Alert';
 import { Link } from 'react-router-dom';
+import { getWorkerDashboardMetrics } from '../../services/dashboardService';
+import { getUserId } from '../../services/authService';
 
 export default function WorkerDashboard() {
-  const [metrics] = useState({
-    pendingInbound: 12,
-    pendingOutbound: 8,
-    pendingPutaway: 5,
-    completedToday: 24,
+  const [metrics, setMetrics] = useState({
+    pendingInbound: 0,
+    pendingOutbound: 0,
+    pendingPutaway: 0,
+    completedToday: 0,
   });
+  const [inboundTasks, setInboundTasks] = useState([]);
+  const [outboundTasks, setOutboundTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const inboundTasks = [
-    {
-      id: 'IB-2025-001',
-      shipmentId: 'SH-2025-001',
-      vendor: 'TechSupply Co.',
-      items: 45,
-      priority: 'High',
-      expectedTime: '10:00 AM',
-      status: 'Ready to Scan',
-    },
-    {
-      id: 'IB-2025-002',
-      shipmentId: 'SH-2025-002',
-      vendor: 'ElectroWorks Inc.',
-      items: 32,
-      priority: 'Medium',
-      expectedTime: '11:30 AM',
-      status: 'In Progress',
-    },
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-  const outboundTasks = [
-    {
-      id: 'OB-2025-045',
-      orderId: 'ORD-8821',
-      customer: 'Retail Store #42',
-      items: 15,
-      priority: 'High',
-      deadline: '3:00 PM',
-      status: 'Ready to Pick',
-    },
-    {
-      id: 'OB-2025-046',
-      orderId: 'ORD-8822',
-      customer: 'Online Order',
-      items: 8,
-      priority: 'Medium',
-      deadline: '4:30 PM',
-      status: 'In Progress',
-    },
-  ];
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const userId = getUserId();
+      if (!userId) {
+        setError('User ID not found. Please log in again.');
+        setLoading(false);
+        return;
+      }
+
+      const userIdNum = parseInt(userId, 10);
+      if (isNaN(userIdNum)) {
+        setError('Invalid user ID. Please log in again.');
+        setLoading(false);
+        return;
+      }
+
+      const data = await getWorkerDashboardMetrics(userIdNum);
+      
+      // Check if we got valid data (the function always returns data, even on error)
+      if (data && data.metrics) {
+        setMetrics(data.metrics);
+        setInboundTasks(data.inboundTasks || []);
+        setOutboundTasks(data.outboundTasks || []);
+      } else {
+        // If data structure is invalid, set defaults
+        setMetrics({
+          pendingInbound: 0,
+          pendingOutbound: 0,
+          pendingPutaway: 0,
+          completedToday: 0,
+        });
+        setInboundTasks([]);
+        setOutboundTasks([]);
+        console.warn('Received invalid data structure from dashboard service');
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      // Only show error if it's a network/auth error, not if it's just empty data
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setError('Authentication error. Please log in again.');
+      } else if (err.message && !err.message.includes('Network')) {
+        // Don't show error for network issues if we have fallback data
+        setError('Failed to load dashboard data. Please try again.');
+      }
+      // Set defaults on error
+      setMetrics({
+        pendingInbound: 0,
+        pendingOutbound: 0,
+        pendingPutaway: 0,
+        completedToday: 0,
+      });
+      setInboundTasks([]);
+      setOutboundTasks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getPriorityBadge = (priority) => {
     switch (priority) {
@@ -69,12 +100,22 @@ export default function WorkerDashboard() {
     }
   };
 
+  if (loading) {
+    return <Loading text="Loading dashboard..." />;
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-gray-900 mb-2">Worker Dashboard</h1>
         <p className="text-gray-500">Your tasks and activities</p>
       </div>
+
+      {error && (
+        <Alert variant="error" onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
@@ -118,20 +159,27 @@ export default function WorkerDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {inboundTasks.map((task) => (
-                <div key={task.id} className="p-3 border border-gray-200 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-900">{task.shipmentId}</span>
-                    {getPriorityBadge(task.priority)}
+            {inboundTasks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <PackageSearch size={48} className="mx-auto mb-4 text-gray-400" />
+                <p>No inbound tasks available</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {inboundTasks.map((task) => (
+                  <div key={task.id} className="p-3 border border-gray-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900">{task.shipmentId}</span>
+                      {getPriorityBadge(task.priority)}
+                    </div>
+                    <p className="text-gray-600 text-sm">{task.vendor}</p>
+                    <p className="text-gray-500 text-sm">
+                      {task.items} items • Expected: {task.expectedTime}
+                    </p>
                   </div>
-                  <p className="text-gray-600 text-sm">{task.vendor}</p>
-                  <p className="text-gray-500 text-sm">
-                    {task.items} items • Expected: {task.expectedTime}
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -145,20 +193,27 @@ export default function WorkerDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {outboundTasks.map((task) => (
-                <div key={task.id} className="p-3 border border-gray-200 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-900">{task.orderId}</span>
-                    {getPriorityBadge(task.priority)}
+            {outboundTasks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Truck size={48} className="mx-auto mb-4 text-gray-400" />
+                <p>No outbound tasks available</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {outboundTasks.map((task) => (
+                  <div key={task.id} className="p-3 border border-gray-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900">{task.orderId}</span>
+                      {getPriorityBadge(task.priority)}
+                    </div>
+                    <p className="text-gray-600 text-sm">{task.customer}</p>
+                    <p className="text-gray-500 text-sm">
+                      {task.items} items • Deadline: {task.deadline}
+                    </p>
                   </div>
-                  <p className="text-gray-600 text-sm">{task.customer}</p>
-                  <p className="text-gray-500 text-sm">
-                    {task.items} items • Deadline: {task.deadline}
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

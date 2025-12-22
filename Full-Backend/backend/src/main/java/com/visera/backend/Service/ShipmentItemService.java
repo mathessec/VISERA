@@ -7,6 +7,7 @@ public interface ShipmentItemService {
     List<ShipmentItem> createBatchShipmentItems(List<ShipmentItem> items);
     ShipmentItem getShipmentItemById(int id);
     List<ShipmentItem> getItemsByShipment(int shipmentId);
+    List<ShipmentItem> getItemsByAssignedWorker(Long workerId);
     ShipmentItem updateShipmentItem(int id, ShipmentItem item);
     void deleteShipmentItem(int id);
 }

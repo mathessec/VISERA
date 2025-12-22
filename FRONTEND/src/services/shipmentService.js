@@ -45,3 +45,8 @@ export const deleteShipment = async (id) => {
   // 204 No Content doesn't have a body, so return null or empty object
   return response.data || null;
 };
+
+export const getAssignedShipments = async () => {
+  const response = await api.get('/api/shipments/worker/assigned');
+  return response.data;
+};
