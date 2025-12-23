@@ -18,3 +18,4 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
     List<Issue> findAllByOrderByCreatedAtDesc();
 }
 
+
