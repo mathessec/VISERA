@@ -1,4 +1,4 @@
-import { ArrowLeft, Edit, Package, MapPin, TrendingUp } from "lucide-react";
+import { ArrowLeft, Edit, MapPin, Package, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Badge from "../../components/common/Badge";
@@ -10,7 +10,6 @@ import Card, {
 } from "../../components/common/Card";
 import Loading from "../../components/common/Loading";
 import api from "../../services/api";
-import { formatDate } from "../../utils/formatters";
 
 export default function SkuDetail() {
   const { id } = useParams();
@@ -26,7 +25,7 @@ export default function SkuDetail() {
   const fetchSku = async () => {
     try {
       const response = await api.get(`/api/skus/getallskudto`);
-      const skuData = response.data.find(s => s.id === parseInt(id));
+      const skuData = response.data.find((s) => s.id === parseInt(id));
       if (skuData) {
         setSku(skuData);
       } else {
@@ -34,14 +33,14 @@ export default function SkuDetail() {
       }
     } catch (err) {
       setError("Failed to load SKU details");
-      console.error('Error fetching SKU:', err);
+      console.error("Error fetching SKU:", err);
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) return <Loading text="Loading SKU..." />;
-  
+
   if (error || !sku) {
     return (
       <div className="space-y-6">
@@ -59,9 +58,9 @@ export default function SkuDetail() {
   }
 
   const getStatusBadgeVariant = (status) => {
-    if (status === 'Out of Stock') return 'gray';
-    if (status === 'Low Stock') return 'red';
-    return 'green';
+    if (status === "Out of Stock") return "gray";
+    if (status === "Low Stock") return "red";
+    return "green";
   };
 
   return (
@@ -77,10 +76,7 @@ export default function SkuDetail() {
             <p className="text-gray-600 mt-1">SKU Details</p>
           </div>
         </div>
-        <Button
-          variant="primary"
-          onClick={() => navigate(`/skus/${id}/edit`)}
-        >
+        <Button variant="primary" onClick={() => navigate(`/skus/${id}/edit`)}>
           <Edit size={20} className="mr-2" />
           Edit
         </Button>
@@ -123,19 +119,19 @@ export default function SkuDetail() {
                 <label className="text-sm font-medium text-gray-500">
                   Color
                 </label>
-                <p className="text-gray-900">{sku.color || '-'}</p>
+                <p className="text-gray-900">{sku.color || "-"}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">
                   Dimensions
                 </label>
-                <p className="text-gray-900">{sku.dimensions || '-'}</p>
+                <p className="text-gray-900">{sku.dimensions || "-"}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">
                   Weight
                 </label>
-                <p className="text-gray-900">{sku.weight ? `${sku.weight} kg` : '-'}</p>
+                <p className="text-gray-900">{sku.weight || "-"}</p>
               </div>
             </CardContent>
           </Card>
@@ -161,7 +157,9 @@ export default function SkuDetail() {
                 <label className="text-sm font-medium text-gray-500">
                   Total Quantity
                 </label>
-                <p className="text-2xl font-bold text-gray-900">{sku.totalQuantity}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {sku.totalQuantity}
+                </p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">
@@ -203,10 +201,3 @@ export default function SkuDetail() {
     </div>
   );
 }
-
-
-
-
-
-
-
