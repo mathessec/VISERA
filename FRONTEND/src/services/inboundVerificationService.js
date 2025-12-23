@@ -19,6 +19,13 @@ export const getShipmentItemsWithLocations = async (shipmentId) => {
   return response.data;
 };
 
+export const dispatchShipmentItem = async (shipmentItemId) => {
+  const response = await api.post(
+    `/api/shipment-items/${shipmentItemId}/dispatch`
+  );
+  return response.data;
+};
+
 
 
 

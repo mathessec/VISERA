@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Package, Scan, CheckCircle, AlertTriangle, Upload, Camera, MapPin } from 'lucide-react';
+import { Package, Scan, CheckCircle, AlertTriangle, Upload, Camera, MapPin, Truck } from 'lucide-react';
 import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
@@ -8,7 +8,7 @@ import Alert from '../../components/common/Alert';
 import { Progress } from '../../components/common/Progress';
 import VerificationResult from '../../components/inbound/VerificationResult';
 import { getAllShipments } from '../../services/shipmentService';
-import { getShipmentItemsWithLocations, verifyPackage } from '../../services/inboundVerificationService';
+import { getShipmentItemsWithLocations, verifyPackage, dispatchShipmentItem } from '../../services/inboundVerificationService';
 
 export default function Outbound() {
   const [shipments, setShipments] = useState([]);
@@ -20,6 +20,7 @@ export default function Outbound() {
   const [verificationResult, setVerificationResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
+  const [dispatching, setDispatching] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
 
@@ -106,8 +107,36 @@ export default function Outbound() {
     setImagePreview(null);
   };
 
+  const handleDispatch = async (pkg) => {
+    if (!pkg || pkg.status !== 'VERIFIED') {
+      setError('Only verified packages can be dispatched');
+      return;
+    }
+
+    try {
+      setDispatching(true);
+      setError('');
+      await dispatchShipmentItem(pkg.id);
+      
+      // Reload packages to update status after dispatch
+      const items = await getShipmentItemsWithLocations(selectedShipment.id);
+      setPackages(items);
+      
+      // Clear selection if the dispatched package was selected
+      if (selectedPackage?.id === pkg.id) {
+        setSelectedPackage(null);
+        setVerificationResult(null);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to dispatch package');
+      console.error('Error dispatching package:', err);
+    } finally {
+      setDispatching(false);
+    }
+  };
+
   const getVerifiedCount = () => {
-    return packages.filter(p => p.status === 'RECEIVED').length;
+    return packages.filter(p => p.status === 'RECEIVED' || p.status === 'DISPATCHED').length;
   };
 
   if (loading) return <Loading text="Loading outbound shipments..." />;
@@ -222,13 +251,15 @@ export default function Outbound() {
                   {packages.map((pkg, index) => (
                     <div
                       key={pkg.id}
-                      onClick={() => pkg.status !== 'RECEIVED' && handlePackageSelect(pkg)}
-                      className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                      onClick={() => pkg.status !== 'RECEIVED' && pkg.status !== 'DISPATCHED' && handlePackageSelect(pkg)}
+                      className={`p-4 rounded-lg border transition-all ${
                         selectedPackage?.id === pkg.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : pkg.status === 'RECEIVED'
-                          ? 'border-green-200 bg-green-50 cursor-not-allowed'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-blue-500 bg-blue-50 cursor-pointer'
+                          : pkg.status === 'RECEIVED' || pkg.status === 'DISPATCHED'
+                          ? pkg.status === 'DISPATCHED'
+                            ? 'border-purple-200 bg-purple-50 cursor-not-allowed'
+                            : 'border-green-200 bg-green-50 cursor-not-allowed'
+                          : 'border-gray-200 hover:border-gray-300 cursor-pointer'
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -237,6 +268,9 @@ export default function Outbound() {
                             <span className="font-medium text-gray-900">Package #{index + 1}</span>
                             {pkg.status === 'RECEIVED' && (
                               <CheckCircle className="text-green-600" size={16} />
+                            )}
+                            {pkg.status === 'DISPATCHED' && (
+                              <Truck className="text-purple-600" size={16} />
                             )}
                           </div>
                           <p className="text-sm text-gray-600">SKU: {pkg.skuCode}</p>
@@ -249,9 +283,38 @@ export default function Outbound() {
                             </div>
                           )}
                         </div>
-                        <Badge variant={pkg.status === 'RECEIVED' ? 'green' : 'gray'}>
-                          {pkg.status || 'PENDING'}
-                        </Badge>
+                        <div className="flex flex-col items-end gap-2">
+                          <Badge variant={
+                            pkg.status === 'DISPATCHED' ? 'purple' :
+                            pkg.status === 'RECEIVED' ? 'green' : 'gray'
+                          }>
+                            {pkg.status || 'PENDING'}
+                          </Badge>
+                          {pkg.status === 'VERIFIED' && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDispatch(pkg);
+                              }}
+                              disabled={dispatching}
+                              className="text-xs"
+                            >
+                              {dispatching ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1" />
+                                  Dispatching...
+                                </>
+                              ) : (
+                                <>
+                                  <Truck size={14} className="mr-1" />
+                                  Dispatch
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -351,6 +414,12 @@ export default function Outbound() {
                         // Approval already submitted by backend
                         handleProceed();
                       }}
+                      onDispatch={() => {
+                        if (selectedPackage) {
+                          handleDispatch(selectedPackage);
+                        }
+                      }}
+                      shipmentType="OUTBOUND"
                     />
                   )}
                 </>

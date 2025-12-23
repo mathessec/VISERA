@@ -1,16 +1,19 @@
 package com.visera.backend.Service;
+import com.visera.backend.Entity.InventoryStock;
 import com.visera.backend.Entity.Shipment;
 import com.visera.backend.Entity.ShipmentItem;
 import com.visera.backend.Entity.ShipmentWorker;
+import com.visera.backend.Entity.Sku;
 import com.visera.backend.Entity.User;
+import com.visera.backend.Repository.InventoryStockRepository;
 import com.visera.backend.Repository.ShipmentItemRepository;
 import com.visera.backend.Repository.ShipmentWorkerRepository;
 import com.visera.backend.Repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ShipmentItemServiceImpl implements ShipmentItemService {
@@ -18,15 +21,18 @@ public class ShipmentItemServiceImpl implements ShipmentItemService {
     private final ShipmentItemRepository repo;
     private final ShipmentWorkerRepository shipmentWorkerRepository;
     private final UserRepository userRepository;
+    private final InventoryStockRepository inventoryStockRepository;
 
     public ShipmentItemServiceImpl(
             ShipmentItemRepository repo,
             ShipmentWorkerRepository shipmentWorkerRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            InventoryStockRepository inventoryStockRepository
     ) {
         this.repo = repo;
         this.shipmentWorkerRepository = shipmentWorkerRepository;
         this.userRepository = userRepository;
+        this.inventoryStockRepository = inventoryStockRepository;
     }
 
     @Override
@@ -108,5 +114,67 @@ public class ShipmentItemServiceImpl implements ShipmentItemService {
         System.out.println("Total items found: " + allItems.size());
         System.out.println("=== END DEBUG ===");
         return allItems;
+    }
+
+    @Override
+    @Transactional
+    public ShipmentItem dispatchShipmentItem(Long shipmentItemId) throws RuntimeException {
+        // Find shipment item
+        ShipmentItem shipmentItem = repo.findById(shipmentItemId)
+                .orElseThrow(() -> new RuntimeException("Shipment item not found with id: " + shipmentItemId));
+
+        // Validate status is VERIFIED
+        if (!"VERIFIED".equals(shipmentItem.getStatus())) {
+            throw new RuntimeException("Shipment item must be VERIFIED before dispatch. Current status: " + shipmentItem.getStatus());
+        }
+
+        // Get SKU from shipment item
+        Sku sku = shipmentItem.getSku();
+        if (sku == null) {
+            throw new RuntimeException("SKU not found for shipment item");
+        }
+
+        // Find existing inventory stock for this SKU
+        List<InventoryStock> stockList = inventoryStockRepository.findBySkuId(sku.getId());
+        
+        if (stockList == null || stockList.isEmpty()) {
+            throw new RuntimeException("No inventory stock found for SKU: " + sku.getSkuCode());
+        }
+
+        // Find stock with sufficient quantity (prioritize bins with enough stock)
+        InventoryStock selectedStock = stockList.stream()
+                .filter(stock -> stock.getQuantity() >= shipmentItem.getQuantity())
+                .findFirst()
+                .orElse(stockList.get(0)); // If no bin has enough, use first available
+
+        // Validate stock availability
+        int requiredQuantity = shipmentItem.getQuantity();
+        if (selectedStock.getQuantity() < requiredQuantity) {
+            String errorMessage = String.format(
+                "Insufficient stock for %s (SKU: %s). Available: %d, Required: %d. " +
+                "Please check alternative locations or contact supervisor.",
+                sku.getProduct() != null ? sku.getProduct().getName() : "item",
+                sku.getSkuCode(),
+                selectedStock.getQuantity(),
+                requiredQuantity
+            );
+            throw new RuntimeException(errorMessage);
+        }
+
+        // Deduct quantity from inventory stock
+        int newQuantity = selectedStock.getQuantity() - requiredQuantity;
+        
+        if (newQuantity == 0) {
+            // Delete stock record if quantity becomes zero
+            inventoryStockRepository.delete(selectedStock);
+        } else {
+            // Update stock quantity
+            selectedStock.setQuantity(newQuantity);
+            inventoryStockRepository.save(selectedStock);
+        }
+
+        // Update shipment item status to DISPATCHED
+        shipmentItem.setStatus("DISPATCHED");
+        return repo.save(shipmentItem);
     }
 }
