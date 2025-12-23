@@ -1,25 +1,25 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Filter } from 'lucide-react';
-import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Select from '../../components/common/Select';
-import Alert from '../../components/common/Alert';
-import { DataTable, getStatusBadge } from '../../components/shared/DataTable';
-import Loading from '../../components/common/Loading';
-import api from '../../services/api';
-import { getAllProducts } from '../../services/productService';
-import { deleteSku } from '../../services/skuService';
+import { Filter, Plus, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Alert from "../../components/common/Alert";
+import Button from "../../components/common/Button";
+import Card, { CardContent, CardHeader } from "../../components/common/Card";
+import Input from "../../components/common/Input";
+import Loading from "../../components/common/Loading";
+import Select from "../../components/common/Select";
+import { DataTable } from "../../components/shared/DataTable";
+import api from "../../services/api";
+import { getAllProducts } from "../../services/productService";
+import { deleteSku } from "../../services/skuService";
 
 export default function SkuList() {
   const navigate = useNavigate();
   const [skus, setSkus] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState('');
-  const [deleteError, setDeleteError] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState("");
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     fetchSkus();
@@ -31,84 +31,93 @@ export default function SkuList() {
       const data = await getAllProducts();
       setProducts(data);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error("Error fetching products:", error);
     }
   };
 
   const fetchSkus = async () => {
     try {
-      const response = await api.get('/api/skus/getallskudto');
+      const response = await api.get("/api/skus/getallskudto");
       setSkus(response.data);
     } catch (error) {
-      console.error('Error fetching SKUs:', error);
+      console.error("Error fetching SKUs:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const columns = [
-    { key: 'id', label: 'SKU ID' },
-    { key: 'productName', label: 'Product Name' },
-    { 
-      key: 'color', 
-      label: 'Variant',
+    { key: "id", label: "SKU ID" },
+    { key: "productName", label: "Product Name" },
+    {
+      key: "color",
+      label: "Variant",
       render: (value, row) => {
         const parts = [];
         if (row.color) parts.push(row.color);
         if (row.dimensions) parts.push(row.dimensions);
         if (row.weight) parts.push(row.weight);
-        return parts.length > 0 ? parts.join(', ') : '-';
-      }
+        return parts.length > 0 ? parts.join(", ") : "-";
+      },
     },
-    { key: 'totalQuantity', label: 'Quantity' },
-    { key: 'binLocation', label: 'Bin Location' },
-    { 
-      key: 'status', 
-      label: 'Status',
+    { key: "totalQuantity", label: "Quantity" },
+    { key: "binLocation", label: "Bin Location" },
+    {
+      key: "status",
+      label: "Status",
       render: (value) => {
-        const isLowStock = value === 'Low Stock';
-        const isOutOfStock = value === 'Out of Stock';
+        const isLowStock = value === "Low Stock";
+        const isOutOfStock = value === "Out of Stock";
         return (
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            isOutOfStock 
-              ? 'bg-gray-100 text-gray-800'
-              : isLowStock 
-                ? 'bg-red-100 text-red-800' 
-                : 'bg-green-100 text-green-800'
-          }`}>
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${
+              isOutOfStock
+                ? "bg-gray-100 text-gray-800"
+                : isLowStock
+                ? "bg-red-100 text-red-800"
+                : "bg-green-100 text-green-800"
+            }`}
+          >
             {value}
           </span>
         );
-      }
+      },
     },
   ];
 
   const handleDeleteSku = async (row) => {
-    if (!window.confirm(`Are you sure you want to delete SKU "${row.skuCode}"? This action cannot be undone.`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete SKU "${row.skuCode}"? This action cannot be undone.`
+      )
+    ) {
       return;
     }
 
     try {
       await deleteSku(row.id);
-      setSkus(skus.filter(sku => sku.id !== row.id));
-      setDeleteError('');
+      setSkus(skus.filter((sku) => sku.id !== row.id));
+      setDeleteError("");
     } catch (error) {
-      console.error('Error deleting SKU:', error);
-      setDeleteError('Failed to delete SKU. It may have associated inventory records.');
+      console.error("Error deleting SKU:", error);
+      setDeleteError(
+        "Failed to delete SKU. It may have associated inventory records."
+      );
     }
   };
 
-  const filteredSkus = skus.filter(sku => {
+  const filteredSkus = skus.filter((sku) => {
     // Filter by search term
-    const matchesSearch = !searchTerm || 
+    const matchesSearch =
+      !searchTerm ||
       sku.id?.toString().includes(searchTerm) ||
       sku.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       sku.skuCode?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     // Filter by selected product
-    const matchesProduct = !selectedProduct || 
-      sku.productId?.toString() === selectedProduct;
-    
+    const matchesProduct =
+      !selectedProduct || sku.productId?.toString() === selectedProduct;
+
     return matchesSearch && matchesProduct;
   });
 
@@ -118,10 +127,14 @@ export default function SkuList() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">SKU Management</h1>
-          <p className="text-gray-500">Manage stock keeping units and inventory</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            SKU Management
+          </h1>
+          <p className="text-gray-500">
+            Manage stock keeping units and inventory
+          </p>
         </div>
-        <Button variant="primary" onClick={() => navigate('/skus/create')}>
+        <Button variant="primary" onClick={() => navigate("/skus/create")}>
           <Plus className="w-4 h-4 mr-2" />
           Add SKU
         </Button>
@@ -146,19 +159,19 @@ export default function SkuList() {
                 value={selectedProduct}
                 onChange={(e) => setSelectedProduct(e.target.value)}
                 options={[
-                  { value: '', label: 'All Products' },
-                  ...products.map(product => ({
+                  { value: "", label: "All Products" },
+                  ...products.map((product) => ({
                     value: product.id.toString(),
-                    label: product.name
-                  }))
+                    label: product.name,
+                  })),
                 ]}
               />
             </div>
-            <Button 
+            <Button
               variant="outline"
               onClick={() => {
-                setSearchTerm('');
-                setSelectedProduct('');
+                setSearchTerm("");
+                setSelectedProduct("");
               }}
             >
               <Filter className="w-4 h-4 mr-2" />

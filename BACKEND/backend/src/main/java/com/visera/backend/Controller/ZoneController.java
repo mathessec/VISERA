@@ -4,6 +4,7 @@ import com.visera.backend.Entity.Zone;
 import com.visera.backend.Service.ZoneService;
 import com.visera.backend.DTOs.ZoneStatisticsDTO;
 import com.visera.backend.DTOs.ZoneUpdateDTO;
+import com.visera.backend.DTOs.ZoneProductAllocationDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -58,6 +59,12 @@ public class ZoneController {
     public ResponseEntity<Void> deleteZone(@PathVariable Long zoneId) {
         zoneService.deleteZone(zoneId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
+    @GetMapping("/{zoneId}/product-allocation")
+    public ResponseEntity<List<ZoneProductAllocationDTO>> getProductAllocationByZone(@PathVariable Long zoneId) {
+        return ResponseEntity.ok(zoneService.getProductAllocationByZone(zoneId));
     }
 }
 

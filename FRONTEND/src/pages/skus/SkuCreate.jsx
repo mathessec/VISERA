@@ -7,11 +7,11 @@ import Card, { CardContent } from "../../components/common/Card";
 import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
 import Select from "../../components/common/Select";
+import { getBinsByRack } from "../../services/binService";
 import { getAllProducts } from "../../services/productService";
+import { getRacksByZone } from "../../services/rackService";
 import { createSku } from "../../services/skuService";
 import { getAllZones } from "../../services/zoneService";
-import { getRacksByZone } from "../../services/rackService";
-import { getBinsByRack } from "../../services/binService";
 
 export default function SkuCreate() {
   const navigate = useNavigate();
@@ -155,9 +155,10 @@ export default function SkuCreate() {
         dimensions: formData.dimensions || null,
         weight: formData.weight || null,
         binId: formData.selectedBin ? parseInt(formData.selectedBin) : null,
-        initialQuantity: formData.selectedBin && formData.initialQuantity
-          ? parseInt(formData.initialQuantity)
-          : null,
+        initialQuantity:
+          formData.selectedBin && formData.initialQuantity
+            ? parseInt(formData.initialQuantity)
+            : null,
       };
       await createSku(payload);
       navigate("/skus");
@@ -310,7 +311,8 @@ export default function SkuCreate() {
                     placeholder="Enter initial stock quantity"
                   />
                   <p className="text-sm text-gray-500 mt-1">
-                    This will create an inventory stock entry for this SKU in the selected bin.
+                    This will create an inventory stock entry for this SKU in
+                    the selected bin.
                   </p>
                 </div>
               )}

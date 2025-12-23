@@ -28,4 +28,9 @@ public class PutawayItemDTO {
     private Boolean hasOverflow; // true if quantity exceeds bin capacity
     private List<BinAllocation> allocationPlan; // if overflow, shows how to split
     private Integer availableCapacity; // available capacity in primary bin
+    private Boolean hasError; // true if allocation failed
+    private String errorMessage; // error message if allocation failed
+    private Boolean zoneCapacityFull; // true if zone has no available capacity
+    private Integer totalZoneCapacity; // total capacity in zone
+    private Integer totalZoneAvailable; // total available capacity in zone
 }

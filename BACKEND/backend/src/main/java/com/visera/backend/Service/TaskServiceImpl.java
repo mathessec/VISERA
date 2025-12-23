@@ -117,8 +117,8 @@ public class TaskServiceImpl implements TaskService {
                     .orElseThrow(() -> new RuntimeException("Bin not found"));
             Sku sku = task.getShipmentItem().getSku();
 
-            // Create or update inventory stock
-            inventoryStockService.updateStock(
+            // Add quantity to inventory stock (not replace)
+            inventoryStockService.addStock(
                     sku.getId().intValue(),
                     binId.intValue(),
                     quantity
@@ -145,9 +145,9 @@ public class TaskServiceImpl implements TaskService {
         return repo.findById(taskId).map(task -> {
             Sku sku = task.getShipmentItem().getSku();
 
-            // Create/update inventory stock for each bin allocation
+            // Add quantity to inventory stock for each bin allocation (not replace)
             for (BinAllocation allocation : allocations) {
-                inventoryStockService.updateStock(
+                inventoryStockService.addStock(
                         sku.getId().intValue(),
                         allocation.getBinId().intValue(),
                         allocation.getQuantity()

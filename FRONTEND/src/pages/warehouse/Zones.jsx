@@ -35,6 +35,7 @@ import {
   deleteZone,
   getZoneStatistics,
   updateZone,
+  getProductAllocationByZone,
 } from "../../services/zoneService";
 
 export default function Zones() {
@@ -71,6 +72,12 @@ export default function Zones() {
   const [rackBins, setRackBins] = useState(new Map()); // Map<rackId, bins[]>
   const [loadingRacks, setLoadingRacks] = useState(new Set()); // Set<zoneId>
   const [loadingBins, setLoadingBins] = useState(new Set()); // Set<rackId>
+
+  // Product allocation state
+  const [zoneProductAllocations, setZoneProductAllocations] = useState(new Map()); // Map<zoneId, ZoneProductAllocationDTO[]>
+  const [expandedProductAllocations, setExpandedProductAllocations] = useState(new Set()); // Set<zoneId>
+  const [expandedProducts, setExpandedProducts] = useState(new Map()); // Map<zoneId, Set<skuId>>
+  const [loadingProductAllocations, setLoadingProductAllocations] = useState(new Set()); // Set<zoneId>
 
   const role = getRole();
   const canManage = role === "ADMIN";
@@ -157,6 +164,55 @@ export default function Zones() {
       }
 
       next.set(zoneId, newRackSet);
+      return next;
+    });
+  };
+
+  const fetchProductAllocationForZone = async (zoneId) => {
+    if (zoneProductAllocations.has(zoneId)) return; // Already loaded
+
+    setLoadingProductAllocations((prev) => new Set(prev).add(zoneId));
+    try {
+      const data = await getProductAllocationByZone(zoneId);
+      setZoneProductAllocations((prev) => new Map(prev).set(zoneId, data));
+    } catch (error) {
+      console.error("Failed to load product allocation:", error);
+      setError("Failed to load product allocation");
+    } finally {
+      setLoadingProductAllocations((prev) => {
+        const next = new Set(prev);
+        next.delete(zoneId);
+        return next;
+      });
+    }
+  };
+
+  const toggleProductAllocation = (zoneId) => {
+    setExpandedProductAllocations((prev) => {
+      const next = new Set(prev);
+      if (next.has(zoneId)) {
+        next.delete(zoneId);
+      } else {
+        next.add(zoneId);
+        fetchProductAllocationForZone(zoneId);
+      }
+      return next;
+    });
+  };
+
+  const toggleProductDetails = (zoneId, skuId) => {
+    setExpandedProducts((prev) => {
+      const next = new Map(prev);
+      const productSet = next.get(zoneId) || new Set();
+      const newProductSet = new Set(productSet);
+
+      if (newProductSet.has(skuId)) {
+        newProductSet.delete(skuId);
+      } else {
+        newProductSet.add(skuId);
+      }
+
+      next.set(zoneId, newProductSet);
       return next;
     });
   };
@@ -676,6 +732,155 @@ export default function Zones() {
                     >
                       {status.label}
                     </Badge>
+
+                    {/* Product Allocation Section */}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div
+                        className="flex items-center justify-between cursor-pointer"
+                        onClick={() => toggleProductAllocation(zone.zoneId)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            toggleProductAllocation(zone.zoneId);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <h4 className="text-lg font-semibold text-gray-800">
+                          Product Allocation
+                        </h4>
+                        {expandedProductAllocations.has(zone.zoneId) ? (
+                          <ChevronDown size={20} className="text-gray-500" />
+                        ) : (
+                          <ChevronRight size={20} className="text-gray-500" />
+                        )}
+                      </div>
+
+                      {expandedProductAllocations.has(zone.zoneId) && (
+                        <div className="mt-3">
+                          {(() => {
+                            if (loadingProductAllocations.has(zone.zoneId)) {
+                              return <Loading text="Loading product allocation..." />;
+                            }
+
+                            const products = zoneProductAllocations.get(zone.zoneId) || [];
+
+                            if (products.length === 0) {
+                              return (
+                                <div className="text-center py-4 text-gray-500 text-sm">
+                                  <Package
+                                    size={24}
+                                    className="mx-auto mb-2 text-gray-400"
+                                  />
+                                  <p>No products allocated in this zone</p>
+                                </div>
+                              );
+                            }
+
+                            const expandedProductsForZone =
+                              expandedProducts.get(zone.zoneId) || new Set();
+
+                            return (
+                              <div className="space-y-2">
+                                {products.map((product) => {
+                                  const isProductExpanded = expandedProductsForZone.has(
+                                    product.skuId
+                                  );
+
+                                  return (
+                                    <div
+                                      key={product.skuId}
+                                      className="border border-gray-200 rounded-lg bg-white"
+                                    >
+                                      {/* Product Summary Row */}
+                                      <div
+                                        className="p-3 bg-gray-50 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                                        onClick={() =>
+                                          toggleProductDetails(zone.zoneId, product.skuId)
+                                        }
+                                        onKeyDown={(e) => {
+                                          if (
+                                            e.key === "Enter" ||
+                                            e.key === " "
+                                          ) {
+                                            e.preventDefault();
+                                            toggleProductDetails(
+                                              zone.zoneId,
+                                              product.skuId
+                                            );
+                                          }
+                                        }}
+                                        role="button"
+                                        tabIndex={0}
+                                      >
+                                        <div className="flex items-center gap-2 flex-1">
+                                          {isProductExpanded ? (
+                                            <ChevronDown
+                                              size={16}
+                                              className="text-gray-500"
+                                            />
+                                          ) : (
+                                            <ChevronRight
+                                              size={16}
+                                              className="text-gray-500"
+                                            />
+                                          )}
+                                          <div className="flex-1">
+                                            <p className="font-medium text-gray-900">
+                                              {product.productName}
+                                            </p>
+                                            <p className="text-sm text-gray-500">
+                                              SKU: {product.skuCode}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <Badge variant="blue" className="ml-2">
+                                          {product.totalQuantity} units
+                                        </Badge>
+                                      </div>
+
+                                      {/* Bin Details */}
+                                      {isProductExpanded && (
+                                        <div className="p-3 bg-white border-t border-gray-200">
+                                          <h5 className="text-sm font-semibold text-gray-700 mb-2">
+                                            Bin Locations:
+                                          </h5>
+                                          <div className="space-y-1">
+                                            {product.binAllocations.map(
+                                              (allocation) => (
+                                                <div
+                                                  key={allocation.binId}
+                                                  className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm"
+                                                >
+                                                  <div>
+                                                    <span className="font-medium text-gray-900">
+                                                      {allocation.binName ||
+                                                        allocation.binCode ||
+                                                        `Bin ${allocation.binId}`}
+                                                    </span>
+                                                    <span className="text-gray-500 ml-2">
+                                                      ({allocation.rackName})
+                                                    </span>
+                                                  </div>
+                                                  <Badge variant="outline">
+                                                    {allocation.quantity} units
+                                                  </Badge>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
 
                     {/* Expandable Racks Section */}
                     {isExpanded && (

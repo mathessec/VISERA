@@ -18,4 +18,10 @@ public class LocationAllocationResult {
     private List<BinAllocation> binAllocations; // list of bins with quantities
     private Long zoneId;
     private String zoneName;
+    private Boolean hasError; // true if allocation failed
+    private String errorMessage; // error message if allocation failed
+    private Boolean zoneCapacityFull; // true if zone has no available capacity
+    private Integer totalZoneCapacity; // total capacity in zone
+    private Integer totalZoneUsed; // total used capacity in zone
+    private Integer totalZoneAvailable; // total available capacity in zone
 }

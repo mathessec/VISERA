@@ -184,9 +184,29 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
             LocationAllocationResult allocationResult = locationAllocationService
                 .allocateLocationWithOverflow(sku, shipmentItem.getQuantity());
 
-            if (allocationResult == null || allocationResult.getPrimaryBin() == null) {
+            // Check for errors in allocation result
+            if (allocationResult == null || 
+                (allocationResult.getHasError() != null && allocationResult.getHasError()) ||
+                allocationResult.getPrimaryBin() == null) {
+                
+                String errorMessage = allocationResult != null && allocationResult.getErrorMessage() != null
+                    ? allocationResult.getErrorMessage()
+                    : "Verification matched but no suitable bin location found for SKU. Manual assignment required.";
+                
+                // If zone capacity is full, create approval request for supervisor intervention
+                if (allocationResult != null && 
+                    allocationResult.getZoneCapacityFull() != null && 
+                    allocationResult.getZoneCapacityFull()) {
+                    return buildMismatchResponse(
+                        errorMessage,
+                        ocrResult,
+                        sku,
+                        null
+                    );
+                }
+                
                 return buildMismatchResponse(
-                    "Verification matched but no suitable bin location found for SKU. Manual assignment required.",
+                    errorMessage,
                     ocrResult,
                     sku,
                     null

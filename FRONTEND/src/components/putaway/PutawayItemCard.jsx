@@ -25,17 +25,41 @@ export default function PutawayItemCard({ item, onStartPutaway }) {
           </p>
         </div>
 
-        {item.suggestedLocation && (
+        {/* Zone Capacity Error */}
+        {item.hasError && item.zoneCapacityFull && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <CheckCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs font-medium text-red-800 mb-1">Zone Capacity Full</p>
+                <p className="text-xs text-red-700">{item.errorMessage}</p>
+                {item.totalZoneAvailable !== undefined && (
+                  <p className="text-xs text-red-600 mt-1">
+                    Available: {item.totalZoneAvailable} units
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Suggested Location */}
+        {item.suggestedLocation && !item.hasError && (
           <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-start gap-2">
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="text-xs text-gray-600 mb-1">Suggested Location</p>
+                <p className="text-xs text-gray-600 mb-1">Suggested Location (from SKU)</p>
                 <p className="text-sm font-semibold text-gray-900">
                   {item.suggestedBinCode || 'N/A'}
                 </p>
                 {item.suggestedZoneName && (
                   <p className="text-xs text-gray-600 mt-1">{item.suggestedZoneName}</p>
+                )}
+                {item.availableCapacity !== undefined && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Available capacity: {item.availableCapacity} units
+                  </p>
                 )}
               </div>
             </div>
@@ -49,9 +73,25 @@ export default function PutawayItemCard({ item, onStartPutaway }) {
               {item.allocationPlan.map((alloc, idx) => (
                 <li key={idx}>
                   {alloc.quantity} units in {alloc.binCode || `Bin ${alloc.binId}`}
+                  {alloc.availableCapacity !== undefined && (
+                    <span className="text-blue-600 ml-1">
+                      (Avail: {alloc.availableCapacity})
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Capacity Warning */}
+        {item.availableCapacity !== undefined && 
+         item.availableCapacity < item.quantity && 
+         !item.hasOverflow && 
+         !item.hasError && (
+          <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+            <p className="font-medium">Capacity Warning</p>
+            <p>Available: {item.availableCapacity}, Required: {item.quantity}</p>
           </div>
         )}
 

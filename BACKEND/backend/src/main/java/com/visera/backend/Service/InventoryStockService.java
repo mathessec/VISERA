@@ -9,6 +9,7 @@ import java.util.List;
 
 public interface InventoryStockService {
     InventoryStock updateStock(int skuId, int binId, int quantity);
+    InventoryStock addStock(int skuId, int binId, int quantity);
     InventoryStock getStock(int skuId, int binId);
     InventoryStock createStock(InventoryStock stock);
     List<InventoryStockDTO> getAllInventoryWithDetails();
