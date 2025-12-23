@@ -10,5 +10,6 @@ public interface ShipmentItemService {
     List<ShipmentItem> getItemsByAssignedWorker(Long workerId);
     ShipmentItem updateShipmentItem(int id, ShipmentItem item);
     void deleteShipmentItem(int id);
+    ShipmentItem dispatchShipmentItem(Long shipmentItemId) throws RuntimeException;
 }
 

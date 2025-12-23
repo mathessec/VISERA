@@ -2,19 +2,15 @@ package com.visera.backend.Controller;
 
 import com.visera.backend.DTOs.ShipmentItemDTO;
 import com.visera.backend.Entity.ShipmentItem;
-import com.visera.backend.Entity.User;
 import com.visera.backend.Repository.UserRepository;
 import com.visera.backend.Service.ShipmentItemService;
 import com.visera.backend.mapper.EntityMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/shipment-items")
@@ -80,6 +76,19 @@ public class ShipmentItemController {
     @PostMapping("/batch")
     public ResponseEntity<List<ShipmentItem>> createBatch(@RequestBody List<ShipmentItem> items) {
         return ResponseEntity.ok(shipmentItemService.createBatchShipmentItems(items));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERVISOR','WORKER')")
+    @PostMapping("/{id}/dispatch")
+    public ResponseEntity<?> dispatchShipmentItem(@PathVariable Long id) {
+        try {
+            ShipmentItem dispatchedItem = shipmentItemService.dispatchShipmentItem(id);
+            return ResponseEntity.ok(dispatchedItem);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(
+                java.util.Map.of("message", e.getMessage())
+            );
+        }
     }
 
 }
