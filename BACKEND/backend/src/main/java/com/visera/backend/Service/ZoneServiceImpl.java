@@ -1,13 +1,18 @@
 package com.visera.backend.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.Comparator;
 
 import org.springframework.stereotype.Service;
 
 import com.visera.backend.DTOs.ZoneStatisticsDTO;
 import com.visera.backend.DTOs.ZoneUpdateDTO;
+import com.visera.backend.DTOs.ZoneProductAllocationDTO;
+import com.visera.backend.DTOs.BinAllocationDTO;
 import com.visera.backend.Entity.Zone;
+import com.visera.backend.Entity.InventoryStock;
 import com.visera.backend.Repository.BinRepository;
 import com.visera.backend.Repository.InventoryStockRepository;
 import com.visera.backend.Repository.RackRepository;
@@ -144,6 +149,82 @@ public class ZoneServiceImpl implements ZoneService {
             
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ZoneProductAllocationDTO> getProductAllocationByZone(Long zoneId) {
+        // Get all racks in the zone
+        List<com.visera.backend.Entity.Rack> racks = rackRepo.findByZoneId(zoneId);
+        
+        // Get all bins in those racks
+        List<Long> rackIds = racks.stream()
+                .map(com.visera.backend.Entity.Rack::getId)
+                .collect(Collectors.toList());
+        
+        List<Long> binIds = new java.util.ArrayList<>();
+        for (Long rackId : rackIds) {
+            List<com.visera.backend.Entity.Bin> bins = binRepo.findByRackId(rackId);
+            binIds.addAll(bins.stream()
+                    .map(com.visera.backend.Entity.Bin::getId)
+                    .collect(Collectors.toList()));
+        }
+        
+        // If no bins, return empty list
+        if (binIds.isEmpty()) {
+            return new java.util.ArrayList<>();
+        }
+        
+        // Get all inventory stock for those bins
+        List<InventoryStock> stocks = inventoryStockRepo.findByBinIdIn(binIds);
+        
+        // Filter out stocks with quantity <= 0
+        stocks = stocks.stream()
+                .filter(stock -> stock.getQuantity() > 0)
+                .collect(Collectors.toList());
+        
+        // Group by SKU
+        Map<com.visera.backend.Entity.Sku, List<InventoryStock>> stocksBySku = stocks.stream()
+                .collect(Collectors.groupingBy(InventoryStock::getSku));
+        
+        // Convert to DTOs
+        return stocksBySku.entrySet().stream()
+                .map(entry -> {
+                    com.visera.backend.Entity.Sku sku = entry.getKey();
+                    List<InventoryStock> skuStocks = entry.getValue();
+                    
+                    // Calculate total quantity
+                    int totalQuantity = skuStocks.stream()
+                            .mapToInt(InventoryStock::getQuantity)
+                            .sum();
+                    
+                    // Create bin allocations
+                    List<BinAllocationDTO> binAllocations = skuStocks.stream()
+                            .map(stock -> {
+                                com.visera.backend.Entity.Bin bin = stock.getBin();
+                                String rackName = bin.getRack() != null ? bin.getRack().getName() : "N/A";
+                                
+                                return BinAllocationDTO.builder()
+                                        .binId(bin.getId())
+                                        .binCode(bin.getCode())
+                                        .binName(bin.getName())
+                                        .rackName(rackName)
+                                        .quantity(stock.getQuantity())
+                                        .build();
+                            })
+                            .sorted(Comparator.comparing(BinAllocationDTO::getRackName)
+                                    .thenComparing(BinAllocationDTO::getBinName))
+                            .collect(Collectors.toList());
+                    
+                    return ZoneProductAllocationDTO.builder()
+                            .skuId(sku.getId())
+                            .skuCode(sku.getSkuCode())
+                            .productName(sku.getProduct() != null ? sku.getProduct().getName() : "N/A")
+                            .totalQuantity(totalQuantity)
+                            .binAllocations(binAllocations)
+                            .build();
+                })
+                .sorted(Comparator.comparing(ZoneProductAllocationDTO::getProductName))
+                .collect(Collectors.toList());
     }
 }
 

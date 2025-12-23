@@ -31,16 +31,47 @@ public class LocationAllocationServiceImpl implements LocationAllocationService 
         return result != null ? result.getPrimaryBin() : null;
     }
 
+    /**
+     * Check if zone has sufficient capacity for required quantity
+     */
+    public ZoneCapacityInfo checkZoneCapacity(Zone zone, Integer requiredQuantity) {
+        List<Bin> zoneBins = binRepository.findByRackZoneId(zone.getId());
+        
+        int totalCapacity = 0;
+        int totalUsed = 0;
+        
+        for (Bin bin : zoneBins) {
+            int binCapacity = bin.getCapacity() != null ? bin.getCapacity() : Integer.MAX_VALUE;
+            if (binCapacity != Integer.MAX_VALUE) {
+                totalCapacity += binCapacity;
+            }
+            
+            // Get current quantity in this bin (sum across all SKUs)
+            List<InventoryStock> stocks = inventoryStockRepository.findByBinId(bin.getId());
+            int binUsed = stocks.stream().mapToInt(InventoryStock::getQuantity).sum();
+            totalUsed += binUsed;
+        }
+        
+        int totalAvailable = totalCapacity - totalUsed;
+        boolean hasCapacity = totalAvailable >= requiredQuantity;
+        
+        return new ZoneCapacityInfo(hasCapacity, totalCapacity, totalUsed, totalAvailable);
+    }
+
     @Override
     public LocationAllocationResult allocateLocationWithOverflow(Sku sku, Integer quantity) {
-        // Step 1: Find SKU's assigned bin (from first InventoryStock entry)
+        // Step 1: Find SKU's assigned bin (prioritize by quantity DESC to get primary location)
         List<InventoryStock> existingStocks = inventoryStockRepository.findBySkuId(sku.getId());
         Bin assignedBin = null;
         InventoryStock assignedStock = null;
         Zone assignedZone = null;
 
         if (!existingStocks.isEmpty()) {
-            assignedStock = existingStocks.get(0); // First entry is the assigned bin
+            // Sort by quantity DESC to get the bin with most stock (primary location)
+            assignedStock = existingStocks.stream()
+                    .sorted(Comparator.comparing(InventoryStock::getQuantity).reversed())
+                    .findFirst()
+                    .orElse(existingStocks.get(0));
             assignedBin = assignedStock.getBin();
             if (assignedBin != null && assignedBin.getRack() != null) {
                 assignedZone = assignedBin.getRack().getZone();
@@ -58,12 +89,42 @@ public class LocationAllocationServiceImpl implements LocationAllocationService 
                     assignedZone = assignedBin.getRack().getZone();
                 }
             } else {
-                return null; // No bins available
+                return LocationAllocationResult.builder()
+                        .hasError(true)
+                        .errorMessage("No bins available in warehouse")
+                        .zoneCapacityFull(false)
+                        .build();
             }
         }
 
         if (assignedZone == null) {
-            return null; // No zone found
+            return LocationAllocationResult.builder()
+                    .hasError(true)
+                    .errorMessage("No zone found for bin assignment")
+                    .zoneCapacityFull(false)
+                    .build();
+        }
+
+        // Step 1.5: Check zone capacity before proceeding
+        ZoneCapacityInfo zoneCapacity = checkZoneCapacity(assignedZone, quantity);
+        if (!zoneCapacity.hasCapacity) {
+            return LocationAllocationResult.builder()
+                    .hasError(true)
+                    .errorMessage(String.format(
+                        "Zone '%s' capacity is full. Total capacity: %d, Used: %d, Available: %d, Required: %d. Please request bin location allocation.",
+                        assignedZone.getName(),
+                        zoneCapacity.totalCapacity,
+                        zoneCapacity.totalUsed,
+                        zoneCapacity.totalAvailable,
+                        quantity
+                    ))
+                    .zoneCapacityFull(true)
+                    .zoneId(assignedZone.getId())
+                    .zoneName(assignedZone.getName())
+                    .totalZoneCapacity(zoneCapacity.totalCapacity)
+                    .totalZoneUsed(zoneCapacity.totalUsed)
+                    .totalZoneAvailable(zoneCapacity.totalAvailable)
+                    .build();
         }
 
         // Step 2: Check capacity
@@ -141,8 +202,26 @@ public class LocationAllocationServiceImpl implements LocationAllocationService 
 
             // If still have remaining quantity, we couldn't allocate all
             if (remainingQuantity > 0) {
-                // Could throw exception or return partial allocation
-                // For now, we'll return what we can allocate
+                // Check zone capacity again for remaining quantity
+                ZoneCapacityInfo remainingCapacity = checkZoneCapacity(assignedZone, remainingQuantity);
+                if (!remainingCapacity.hasCapacity) {
+                    return LocationAllocationResult.builder()
+                            .hasError(true)
+                            .errorMessage(String.format(
+                                "Zone '%s' capacity insufficient for remaining quantity. Available: %d, Required: %d. Please request bin location allocation.",
+                                assignedZone.getName(),
+                                remainingCapacity.totalAvailable,
+                                remainingQuantity
+                            ))
+                            .zoneCapacityFull(true)
+                            .zoneId(assignedZone.getId())
+                            .zoneName(assignedZone.getName())
+                            .totalZoneCapacity(remainingCapacity.totalCapacity)
+                            .totalZoneUsed(remainingCapacity.totalUsed)
+                            .totalZoneAvailable(remainingCapacity.totalAvailable)
+                            .binAllocations(binAllocations) // Return partial allocation
+                            .build();
+                }
             }
         }
 
@@ -155,6 +234,11 @@ public class LocationAllocationServiceImpl implements LocationAllocationService 
                 .binAllocations(binAllocations)
                 .zoneId(assignedZone.getId())
                 .zoneName(assignedZone.getName())
+                .hasError(false)
+                .zoneCapacityFull(false)
+                .totalZoneCapacity(zoneCapacity.totalCapacity)
+                .totalZoneUsed(zoneCapacity.totalUsed)
+                .totalZoneAvailable(zoneCapacity.totalAvailable)
                 .build();
     }
 
@@ -180,6 +264,21 @@ public class LocationAllocationServiceImpl implements LocationAllocationService 
             this.bin = bin;
             this.availableCapacity = availableCapacity;
             this.hasSameSku = hasSameSku;
+        }
+    }
+
+    // Helper class for zone capacity information
+    private static class ZoneCapacityInfo {
+        boolean hasCapacity;
+        int totalCapacity;
+        int totalUsed;
+        int totalAvailable;
+
+        ZoneCapacityInfo(boolean hasCapacity, int totalCapacity, int totalUsed, int totalAvailable) {
+            this.hasCapacity = hasCapacity;
+            this.totalCapacity = totalCapacity;
+            this.totalUsed = totalUsed;
+            this.totalAvailable = totalAvailable;
         }
     }
 }

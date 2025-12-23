@@ -52,6 +52,28 @@ public class InventoryStockServiceImpl implements InventoryStockService {
     }
 
     @Override
+    public InventoryStock addStock(int skuId, int binId, int quantity) {
+        Sku sku = skuRepo.findById(Long.valueOf(skuId)).orElse(null);
+        Bin bin = binRepo.findById(Long.valueOf(binId)).orElse(null);
+
+        if (sku == null || bin == null) return null;
+
+        InventoryStock stock = repo.findBySkuIdAndBinId(sku.getId(), bin.getId())
+                .orElse(InventoryStock.builder()
+                        .sku(sku)
+                        .bin(bin)
+                        .quantity(0)
+                        .build()
+                );
+
+        // Add quantity to existing quantity instead of replacing
+        stock.setQuantity(stock.getQuantity() + quantity);
+        stock.setUpdatedAt(LocalDateTime.now());
+
+        return repo.save(stock);
+    }
+
+    @Override
     public InventoryStock createStock(InventoryStock stock) {
 //        stock.setUpdatedAt(LocalDateTime.now());
         return repo.save(stock);

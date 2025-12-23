@@ -29,3 +29,8 @@ export const deleteZone = async (zoneId) => {
   const response = await api.delete(`/api/zones/delete/${zoneId}`);
   return response.data;
 };
+
+export const getProductAllocationByZone = async (zoneId) => {
+  const response = await api.get(`/api/zones/${zoneId}/product-allocation`);
+  return response.data;
+};

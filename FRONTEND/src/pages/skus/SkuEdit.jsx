@@ -7,11 +7,11 @@ import Card, { CardContent } from "../../components/common/Card";
 import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
 import Select from "../../components/common/Select";
-import { getAllProducts } from "../../services/productService";
-import { getAllZones } from "../../services/zoneService";
-import { getRacksByZone } from "../../services/rackService";
-import { getBinsByRack } from "../../services/binService";
 import api from "../../services/api";
+import { getBinsByRack } from "../../services/binService";
+import { getAllProducts } from "../../services/productService";
+import { getRacksByZone } from "../../services/rackService";
+import { getAllZones } from "../../services/zoneService";
 
 export default function SkuEdit() {
   const navigate = useNavigate();
@@ -76,12 +76,12 @@ export default function SkuEdit() {
     try {
       const [productsData, skuResponse] = await Promise.all([
         getAllProducts(),
-        api.get('/api/skus/getallskudto')
+        api.get("/api/skus/getallskudto"),
       ]);
-      
+
       setProducts(productsData);
-      
-      const skuData = skuResponse.data.find(s => s.id === parseInt(id));
+
+      const skuData = skuResponse.data.find((s) => s.id === parseInt(id));
       if (skuData) {
         setFormData({
           productId: skuData.productId || "",
@@ -90,7 +90,7 @@ export default function SkuEdit() {
           dimensions: skuData.dimensions || "",
           weight: skuData.weight || "",
         });
-        
+
         // Fetch inventory stocks for this SKU
         fetchInventoryStocks();
       } else {
@@ -98,7 +98,7 @@ export default function SkuEdit() {
       }
     } catch (err) {
       setError("Failed to load SKU data");
-      console.error('Error fetching data:', err);
+      console.error("Error fetching data:", err);
     } finally {
       setLoadingData(false);
     }
@@ -110,7 +110,7 @@ export default function SkuEdit() {
       // For now, we'll skip loading existing locations
       setInventoryStocks([]);
     } catch (err) {
-      console.error('Error fetching inventory stocks:', err);
+      console.error("Error fetching inventory stocks:", err);
     }
   };
 
@@ -183,19 +183,19 @@ export default function SkuEdit() {
         dimensions: formData.dimensions || null,
         weight: formData.weight || null,
       };
-      
+
       await api.put(`/api/skus/update/${id}`, payload);
 
       // If new location is added, create inventory stock entry
       if (newLocation.selectedBin && newLocation.quantity) {
         try {
-          await api.put('/api/inventory/update', {
+          await api.put("/api/inventory/update", {
             skuId: parseInt(id),
             binId: parseInt(newLocation.selectedBin),
             quantity: parseInt(newLocation.quantity),
           });
         } catch (invErr) {
-          console.error('Error updating inventory location:', invErr);
+          console.error("Error updating inventory location:", invErr);
           // Don't fail the whole operation if inventory update fails
         }
       }
@@ -219,7 +219,9 @@ export default function SkuEdit() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Edit SKU</h1>
-          <p className="text-gray-600 mt-1">Update Stock Keeping Unit details</p>
+          <p className="text-gray-600 mt-1">
+            Update Stock Keeping Unit details
+          </p>
         </div>
       </div>
 
@@ -352,7 +354,8 @@ export default function SkuEdit() {
                     placeholder="Enter quantity for this location"
                   />
                   <p className="text-sm text-gray-500 mt-1">
-                    This will update or create an inventory stock entry for this SKU in the selected bin.
+                    This will update or create an inventory stock entry for this
+                    SKU in the selected bin.
                   </p>
                 </div>
               )}

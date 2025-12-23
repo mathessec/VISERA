@@ -63,6 +63,12 @@ export default function Putaway() {
   };
 
   const handleStartPutaway = async (item) => {
+    // Don't allow starting putaway if there's a zone capacity error
+    if (item.hasError && item.zoneCapacityFull) {
+      setError(item.errorMessage || 'Zone capacity is full. Please request bin location allocation from supervisor.');
+      return;
+    }
+
     try {
       // Mark task as in progress
       await startPutaway(item.id);
