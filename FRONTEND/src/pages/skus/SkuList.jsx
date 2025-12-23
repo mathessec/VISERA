@@ -56,7 +56,7 @@ export default function SkuList() {
         const parts = [];
         if (row.color) parts.push(row.color);
         if (row.dimensions) parts.push(row.dimensions);
-        if (row.weight) parts.push(`${row.weight}kg`);
+        if (row.weight) parts.push(row.weight);
         return parts.length > 0 ? parts.join(', ') : '-';
       }
     },

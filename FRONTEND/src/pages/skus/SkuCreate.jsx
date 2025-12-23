@@ -235,7 +235,7 @@ export default function SkuCreate() {
 
                 <div>
                   <Input
-                    label="Weight (kg)"
+                    label="Weight"
                     name="weight"
                     type="text"
                     value={formData.weight}
