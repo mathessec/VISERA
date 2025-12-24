@@ -1,23 +1,27 @@
 package com.visera.backend.Service;
-import com.visera.backend.DTOs.BinAllocation;
-import com.visera.backend.DTOs.PickingStatisticsDTO;
-import com.visera.backend.DTOs.PutawayStatisticsDTO;
-import com.visera.backend.DTOs.RecentCompletionDTO;
-import com.visera.backend.Entity.*;
-import com.visera.backend.Repository.BinRepository;
-import com.visera.backend.Repository.InventoryStockRepository;
-import com.visera.backend.Repository.ShipmentItemRepository;
-import com.visera.backend.Repository.TaskRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.visera.backend.DTOs.BinAllocation;
+import com.visera.backend.DTOs.PickingStatisticsDTO;
+import com.visera.backend.DTOs.PutawayStatisticsDTO;
+import com.visera.backend.Entity.Bin;
+import com.visera.backend.Entity.InventoryStock;
+import com.visera.backend.Entity.Shipment;
+import com.visera.backend.Entity.ShipmentItem;
+import com.visera.backend.Entity.Sku;
+import com.visera.backend.Entity.Task;
+import com.visera.backend.Repository.BinRepository;
+import com.visera.backend.Repository.InventoryStockRepository;
+import com.visera.backend.Repository.ShipmentItemRepository;
+import com.visera.backend.Repository.ShipmentRepository;
+import com.visera.backend.Repository.TaskRepository;
 
 @Service
 public class TaskServiceImpl implements TaskService {
@@ -28,6 +32,7 @@ public class TaskServiceImpl implements TaskService {
     private final BinRepository binRepository;
     private final ShipmentItemService shipmentItemService;
     private final ShipmentItemRepository shipmentItemRepository;
+    private final ShipmentRepository shipmentRepository;
     private final ObjectMapper objectMapper;
 
     public TaskServiceImpl(
@@ -36,13 +41,15 @@ public class TaskServiceImpl implements TaskService {
             InventoryStockRepository inventoryStockRepository,
             BinRepository binRepository,
             ShipmentItemService shipmentItemService,
-            ShipmentItemRepository shipmentItemRepository) {
+            ShipmentItemRepository shipmentItemRepository,
+            ShipmentRepository shipmentRepository) {
         this.repo = repo;
         this.inventoryStockService = inventoryStockService;
         this.inventoryStockRepository = inventoryStockRepository;
         this.binRepository = binRepository;
         this.shipmentItemService = shipmentItemService;
         this.shipmentItemRepository = shipmentItemRepository;
+        this.shipmentRepository = shipmentRepository;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -135,6 +142,9 @@ public class TaskServiceImpl implements TaskService {
             shipmentItem.setStatus("RECEIVED");
             shipmentItemService.updateShipmentItem(shipmentItem.getId().intValue(), shipmentItem);
             
+            // Check if all items in the shipment are received and update shipment status if complete
+            updateShipmentStatusIfAllItemsReceived(shipmentItem.getShipment());
+            
             return savedTask;
         }).orElse(null);
     }
@@ -165,8 +175,68 @@ public class TaskServiceImpl implements TaskService {
             shipmentItem.setStatus("RECEIVED");
             shipmentItemService.updateShipmentItem(shipmentItem.getId().intValue(), shipmentItem);
             
+            // Check if all items in the shipment are received and update shipment status if complete
+            updateShipmentStatusIfAllItemsReceived(shipmentItem.getShipment());
+            
             return savedTask;
         }).orElse(null);
+    }
+
+    /**
+     * Helper method to check if all shipment items are received
+     * @param shipment The shipment to check
+     * @return true if all items have status "RECEIVED", false otherwise
+     */
+    private boolean areAllItemsReceived(Shipment shipment) {
+        if (shipment == null) {
+            return false;
+        }
+        
+        // Get all shipment items for this shipment
+        List<ShipmentItem> allItems = shipmentItemRepository.findByShipmentId(shipment.getId());
+        
+        // If no items exist, consider it not complete (edge case)
+        if (allItems == null || allItems.isEmpty()) {
+            return false;
+        }
+        
+        // Check if all items have status "RECEIVED"
+        return allItems.stream()
+                .allMatch(item -> "RECEIVED".equals(item.getStatus()));
+    }
+
+    /**
+     * Updates shipment status to COMPLETED if all items are received
+     * Only updates for INBOUND shipments
+     * @param shipment The shipment to check and update
+     */
+    private void updateShipmentStatusIfAllItemsReceived(Shipment shipment) {
+        if (shipment == null) {
+            return;
+        }
+        
+        // Only process INBOUND shipments
+        if (!"INBOUND".equals(shipment.getShipmentType())) {
+            return;
+        }
+        
+        // Check if shipment is already completed
+        if ("COMPLETED".equals(shipment.getStatus())) {
+            return;
+        }
+        
+        // Check if all items are received
+        if (areAllItemsReceived(shipment)) {
+            try {
+                shipment.setStatus("COMPLETED");
+                shipmentRepository.save(shipment);
+                System.out.println("Shipment " + shipment.getId() + " automatically marked as COMPLETED - all items received");
+            } catch (Exception e) {
+                // Log error but don't fail the putaway operation
+                System.err.println("Failed to update shipment status to COMPLETED: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -289,7 +359,67 @@ public class TaskServiceImpl implements TaskService {
             shipmentItem.setStatus("DISPATCHED");
             shipmentItemService.updateShipmentItem(shipmentItem.getId().intValue(), shipmentItem);
             
+            // Check if all items in the shipment are dispatched and update shipment status if complete
+            updateShipmentStatusIfAllItemsDispatched(shipmentItem.getShipment());
+            
             return savedTask;
         }).orElse(null);
+    }
+
+    /**
+     * Helper method to check if all shipment items are dispatched
+     * @param shipment The shipment to check
+     * @return true if all items have status "DISPATCHED", false otherwise
+     */
+    private boolean areAllItemsDispatched(Shipment shipment) {
+        if (shipment == null) {
+            return false;
+        }
+        
+        // Get all shipment items for this shipment
+        List<ShipmentItem> allItems = shipmentItemRepository.findByShipmentId(shipment.getId());
+        
+        // If no items exist, consider it not complete (edge case)
+        if (allItems == null || allItems.isEmpty()) {
+            return false;
+        }
+        
+        // Check if all items have status "DISPATCHED"
+        return allItems.stream()
+                .allMatch(item -> "DISPATCHED".equals(item.getStatus()));
+    }
+
+    /**
+     * Updates shipment status to COMPLETED if all items are dispatched
+     * Only updates for OUTBOUND shipments
+     * @param shipment The shipment to check and update
+     */
+    private void updateShipmentStatusIfAllItemsDispatched(Shipment shipment) {
+        if (shipment == null) {
+            return;
+        }
+        
+        // Only process OUTBOUND shipments
+        if (!"OUTBOUND".equals(shipment.getShipmentType())) {
+            return;
+        }
+        
+        // Check if shipment is already completed
+        if ("COMPLETED".equals(shipment.getStatus())) {
+            return;
+        }
+        
+        // Check if all items are dispatched
+        if (areAllItemsDispatched(shipment)) {
+            try {
+                shipment.setStatus("COMPLETED");
+                shipmentRepository.save(shipment);
+                System.out.println("Shipment " + shipment.getId() + " automatically marked as COMPLETED - all items dispatched");
+            } catch (Exception e) {
+                // Log error but don't fail the picking operation
+                System.err.println("Failed to update shipment status to COMPLETED: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
 }
