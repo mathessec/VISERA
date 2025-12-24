@@ -57,15 +57,34 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     @Override
+    @Transactional
     public Shipment updateShipment(int id, Shipment updated) {
         return repo.findById((long) id).map(shipment -> {
-            shipment.setShipmentType(updated.getShipmentType());
-            shipment.setStatus(updated.getStatus());
-            shipment.setCreatedBy(updated.getCreatedBy());
-            shipment.setAssignedTo(updated.getAssignedTo());
+            // Update shipment type
+            if (updated.getShipmentType() != null) {
+                shipment.setShipmentType(updated.getShipmentType());
+            }
+            
+            // Update status
+            if (updated.getStatus() != null) {
+                shipment.setStatus(updated.getStatus());
+            }
+            
+            // DO NOT update createdBy - it should never change after creation
+            // The existing createdBy from the database is preserved
+            
+            // Only update assignedTo if it's provided in the payload
+            if (updated.getAssignedTo() != null && updated.getAssignedTo().getId() != null) {
+                User assignedUser = userRepository.findById(updated.getAssignedTo().getId())
+                        .orElseThrow(() -> new RuntimeException("User not found with id: " + updated.getAssignedTo().getId()));
+                shipment.setAssignedTo(assignedUser);
+            }
+            
+            // Update deadline if provided
             if (updated.getDeadline() != null) {
                 shipment.setDeadline(updated.getDeadline());
             }
+            
             return repo.save(shipment);
         }).orElse(null);
     }

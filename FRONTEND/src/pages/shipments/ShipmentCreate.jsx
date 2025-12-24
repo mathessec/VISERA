@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Plus, X } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -11,7 +11,7 @@ import Alert from '../../components/common/Alert';
 import Loading from '../../components/common/Loading';
 import { createShipment, assignWorkers, getAllShipments } from '../../services/shipmentService';
 import { createBatchItems } from '../../services/shipmentItemService';
-import { getAllUsers } from '../../services/userService';
+import { getWorkers } from '../../services/userService';
 import { getAllSkus } from '../../services/skuService';
 import { getUserId } from '../../services/authService';
 
@@ -70,13 +70,13 @@ export default function ShipmentCreate() {
       setLoading(true);
       // Fetch all required data in parallel
       const [workersData, skusData, shipmentsData] = await Promise.all([
-        getAllUsers(),
+        getWorkers(), // Use getWorkers() which is accessible to ADMIN and SUPERVISOR
         getAllSkus(),
         getAllShipments(), // Fetch all shipments to check worker assignments
       ]);
       
-      // Filter workers by role
-      const allWorkers = workersData.filter((u) => u.role === 'WORKER');
+      // getWorkers() already returns only workers, so no need to filter by role
+      const allWorkers = workersData;
       
       // Get IDs of workers already assigned to active (non-COMPLETED) shipments
       const assignedWorkerIds = new Set();

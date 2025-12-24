@@ -53,7 +53,7 @@ public class ShipmentItemController {
         return (item != null) ? ResponseEntity.ok(item) : ResponseEntity.notFound().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> delete(@PathVariable int id) {
         shipmentItemService.deleteShipmentItem(id);
