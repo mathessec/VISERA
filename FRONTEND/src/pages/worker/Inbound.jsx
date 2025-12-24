@@ -7,7 +7,7 @@ import Loading from '../../components/common/Loading';
 import Alert from '../../components/common/Alert';
 import { Progress } from '../../components/common/Progress';
 import VerificationResult from '../../components/inbound/VerificationResult';
-import { getAllShipments } from '../../services/shipmentService';
+import { getAssignedShipments } from '../../services/shipmentService';
 import { getShipmentItemsWithLocations, verifyPackage } from '../../services/inboundVerificationService';
 
 export default function Inbound() {
@@ -29,7 +29,7 @@ export default function Inbound() {
 
   const fetchInboundShipments = async () => {
     try {
-      const data = await getAllShipments();
+      const data = await getAssignedShipments();
       const inbound = data.filter(s => s.shipmentType === 'INBOUND' && s.status !== 'COMPLETED');
       setShipments(inbound);
     } catch (err) {

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Plus, X } from 'lucide-react';
 import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -11,33 +11,55 @@ import Alert from '../../components/common/Alert';
 import Loading from '../../components/common/Loading';
 import { createShipment, assignWorkers, getAllShipments } from '../../services/shipmentService';
 import { createBatchItems } from '../../services/shipmentItemService';
-import { getAllUsers, getWorkers } from '../../services/userService';
+import { getAllUsers } from '../../services/userService';
 import { getAllSkus } from '../../services/skuService';
 import { getUserId } from '../../services/authService';
 
+// Function to get initial form data with default deadline set to tomorrow
+// Defined outside component to ensure stability
+const getInitialFormData = () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const defaultDeadline = tomorrow.toISOString().split('T')[0];
+  
+  return {
+    shipmentType: 'INBOUND',
+    status: 'CREATED',
+    deadline: defaultDeadline,
+    selectedWorkers: [],
+  };
+};
+
 export default function ShipmentCreate() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [workers, setWorkers] = useState([]);
   const [skus, setSkus] = useState([]);
   
-  // Set default deadline to tomorrow
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const defaultDeadline = tomorrow.toISOString().split('T')[0];
-  
-  const [formData, setFormData] = useState({
-    shipmentType: 'INBOUND',
-    status: 'CREATED',
-    deadline: defaultDeadline,
-    selectedWorkers: [],
-  });
+  const [formData, setFormData] = useState(getInitialFormData());
   
   const [packages, setPackages] = useState([
     { skuId: '', quantity: '' },
   ]);
+
+  // Function to reset form to initial state
+  // Memoized with useCallback to avoid unnecessary re-renders
+  const resetForm = useCallback(() => {
+    setFormData(getInitialFormData());
+    setPackages([{ skuId: '', quantity: '' }]);
+    setError('');
+  }, []); // getInitialFormData is a pure function, no dependencies needed
+
+  // Reset form whenever the route changes to this page
+  // This handles the case where React Router reuses the component instance
+  useEffect(() => {
+    if (location.pathname === '/shipments/create') {
+      resetForm();
+    }
+  }, [location.pathname, resetForm]);
 
   useEffect(() => {
     fetchData();
@@ -46,94 +68,43 @@ export default function ShipmentCreate() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      setError('');
-      
-      // Use Promise.allSettled to handle failures gracefully
-      // Try getWorkers first (supervisors can access), fallback to getAllUsers (admin only)
-      const [workersResult, skusResult, usersResult, shipmentsResult] = await Promise.allSettled([
-        getWorkers(), // Supervisors can access this endpoint
+      // Fetch all required data in parallel
+      const [workersData, skusData, shipmentsData] = await Promise.all([
+        getAllUsers(),
         getAllSkus(),
-        getAllUsers(), // May fail for supervisors (requires ADMIN role) - used as fallback
-        getAllShipments(), // Fetch all shipments to extract workers as additional fallback
+        getAllShipments(), // Fetch all shipments to check worker assignments
       ]);
-
-      // Extract successful results
-      const workersData = workersResult.status === 'fulfilled' ? workersResult.value : [];
-      const skusData = skusResult.status === 'fulfilled' ? skusResult.value : [];
-      const usersData = usersResult.status === 'fulfilled' ? usersResult.value : [];
-      const allShipments = shipmentsResult.status === 'fulfilled' ? shipmentsResult.value : [];
-
-      // Log warnings for expected failures (but don't fail the entire page)
-      if (workersResult.status === 'rejected') {
-        console.warn('Could not fetch workers:', workersResult.reason);
-      }
-      if (skusResult.status === 'rejected') {
-        console.error('Error fetching SKUs:', skusResult.reason);
-        setError('Failed to load SKUs. Please refresh the page.');
-      }
-      if (usersResult.status === 'rejected') {
-        console.warn('Could not fetch all users (may require ADMIN role):', usersResult.reason);
-      }
-      if (shipmentsResult.status === 'rejected') {
-        console.warn('Could not fetch all shipments:', shipmentsResult.reason);
-      }
-
-      // Set SKUs (required for package creation)
-      setSkus(skusData || []);
       
-      // Check if SKUs are empty (critical error - shipments can't be created without SKUs)
-      if (!skusData || skusData.length === 0) {
-        console.warn('No SKUs found in the system');
-        setError('No SKUs available. Please create SKUs before creating shipments. Contact your administrator if you need assistance.');
-      }
-
-      // Extract workers - prioritize workers endpoint, then users, then shipments
-      const workerMap = new Map();
+      // Filter workers by role
+      const allWorkers = workersData.filter((u) => u.role === 'WORKER');
       
-      // First, use workers from the workers endpoint (most reliable for supervisors)
-      if (workersData.length > 0) {
-        workersData.forEach((worker) => {
-          workerMap.set(worker.id, worker);
-        });
+      // Get IDs of workers already assigned to active (non-COMPLETED) shipments
+      const assignedWorkerIds = new Set();
+      if (shipmentsData && Array.isArray(shipmentsData)) {
+        shipmentsData
+          .filter((shipment) => shipment.status && shipment.status !== 'COMPLETED')
+          .forEach((shipment) => {
+            if (shipment.assignedWorkers && Array.isArray(shipment.assignedWorkers)) {
+              shipment.assignedWorkers.forEach((worker) => {
+                if (worker.role === 'WORKER' && worker.id) {
+                  assignedWorkerIds.add(worker.id);
+                }
+              });
+            }
+          });
       }
       
-      // Fallback: get workers from getAllUsers if available (for admins)
-      if (usersData.length > 0) {
-        const workersFromUsers = usersData.filter((u) => u.role === 'WORKER');
-        workersFromUsers.forEach((worker) => {
-          if (!workerMap.has(worker.id)) {
-            workerMap.set(worker.id, worker);
-          }
-        });
-      }
+      // Filter out workers already assigned to active shipments
+      // Only show workers who are not currently assigned to any active shipment
+      const availableWorkers = allWorkers.filter(
+        (worker) => !assignedWorkerIds.has(worker.id)
+      );
       
-      // Additional fallback: extract workers from all shipments
-      if (allShipments.length > 0) {
-        allShipments.forEach((shipment) => {
-          if (shipment.assignedWorkers && Array.isArray(shipment.assignedWorkers)) {
-            shipment.assignedWorkers.forEach((worker) => {
-              if (worker.role === 'WORKER' && !workerMap.has(worker.id)) {
-                workerMap.set(worker.id, worker);
-              }
-            });
-          }
-        });
-      }
-      
-      const allWorkers = Array.from(workerMap.values());
-      setWorkers(allWorkers);
-      
-      // Log warning if no workers found (non-critical - shipments can be created without workers)
-      if (allWorkers.length === 0) {
-        console.warn('No workers found in the system. Shipments can still be created without assigning workers.');
-      }
+      setWorkers(availableWorkers);
+      setSkus(skusData);
     } catch (err) {
       console.error('Error fetching data:', err);
-      const errorMessage = err.response?.data?.message || 
-                          err.response?.data?.error || 
-                          err.message || 
-                          'Failed to load data';
-      setError(errorMessage);
+      setError('Failed to load data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -229,6 +200,9 @@ export default function ShipmentCreate() {
 
       await createBatchItems(packagePayload);
 
+      // Reset form before navigation to ensure clean state for next creation
+      resetForm();
+
       // Navigate to shipment detail page
       navigate(`/shipments/${shipment.id}`);
     } catch (err) {
@@ -248,7 +222,7 @@ export default function ShipmentCreate() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="outline" onClick={() => navigate(-1)}>
+        <Button variant="outline" onClick={() => navigate('/shipments')}>
           <ArrowLeft size={20} className="mr-2" />
           Back
         </Button>
@@ -320,11 +294,6 @@ export default function ShipmentCreate() {
               onChange={handleWorkersChange}
               placeholder="Select workers to assign..."
             />
-            {workers.length === 0 && (
-              <p className="mt-2 text-sm text-amber-600">
-                ⚠️ No workers available. Workers must be created by an administrator or assigned to existing shipments before they can be assigned to new shipments.
-              </p>
-            )}
           </CardContent>
         </Card>
 
@@ -345,13 +314,6 @@ export default function ShipmentCreate() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {skus.length === 0 && (
-              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-sm text-amber-800">
-                  ⚠️ <strong>No SKUs available.</strong> Please create SKUs before adding packages to shipments. Contact your administrator if you need assistance.
-                </p>
-              </div>
-            )}
             {packages.map((pkg, index) => (
               <PackageInputRow
                 key={index}
