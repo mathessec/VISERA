@@ -9,7 +9,7 @@ import Table, { TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import Loading from '../../components/common/Loading';
 import Alert from '../../components/common/Alert';
 import Modal from '../../components/common/Modal';
-import { getAllUsers, deleteUser, updateUser, getUserById } from '../../services/userService';
+import { getWorkers, deleteUser, updateUser, getUserById } from '../../services/userService';
 import { getTasksByUser } from '../../services/taskService';
 import { getAllShipments } from '../../services/shipmentService';
 import { isAdmin } from '../../services/authService';
@@ -47,40 +47,38 @@ export default function Workers() {
       setLoading(true);
       setError('');
 
+      // Use getWorkers() for both ADMIN and SUPERVISOR (works for both roles)
       // Fetch all required data in parallel, but handle errors gracefully
-      const [usersResult, shipmentsResult] = await Promise.allSettled([
-        getAllUsers(), // May fail for supervisors (requires ADMIN role)
+      const [workersResult, shipmentsResult] = await Promise.allSettled([
+        getWorkers(), // Works for both ADMIN and SUPERVISOR
         getAllShipments(),
       ]);
 
       // Extract successful results, defaulting to empty arrays on failure
-      const users = usersResult.status === 'fulfilled' ? usersResult.value : [];
+      let workers = workersResult.status === 'fulfilled' ? workersResult.value : [];
       const shipmentsData = shipmentsResult.status === 'fulfilled' ? shipmentsResult.value : [];
       
       // Store shipments for later use in counting active shipments
       setShipments(shipmentsData);
 
-      // Log warnings for expected failures (but don't fail the entire page)
-      if (usersResult.status === 'rejected') {
-        console.warn('Could not fetch users (may require ADMIN role):', usersResult.reason);
+      // Log errors for failures
+      if (workersResult.status === 'rejected') {
+        console.error('Error fetching workers:', workersResult.reason);
       }
       if (shipmentsResult.status === 'rejected') {
         console.error('Error fetching shipments:', shipmentsResult.reason);
       }
 
-      // Filter workers from users if available
-      let workers = users.filter((u) => u.role === 'WORKER');
-
-      // Always try to extract worker info from shipments as a supplement/fallback
-      // This ensures we get workers even if user list is empty or incomplete
+      // Optional: Supplement workers from shipments if needed
+      // This ensures we get workers even if API response is incomplete
       const workerMap = new Map();
 
-      // Add workers from user list
+      // Add workers from API response
       workers.forEach((worker) => {
         workerMap.set(worker.id, worker);
       });
 
-      // Add workers from shipments (this will supplement or replace if user list was empty)
+      // Add workers from shipments as supplement (if any are missing from API)
       if (shipmentsData.length > 0) {
         shipmentsData.forEach((shipment) => {
           if (shipment.assignedWorkers && Array.isArray(shipment.assignedWorkers)) {
@@ -96,7 +94,7 @@ export default function Workers() {
       // Convert map to array
       const allWorkers = Array.from(workerMap.values());
 
-      // Only show error if no workers found from any source
+      // Show error if no workers found from any source
       if (allWorkers.length === 0) {
         setError('Failed to load workers. No workers found in the system.');
       } else {
