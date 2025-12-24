@@ -1,4 +1,4 @@
-import { getAssignedShipments } from './shipmentService';
+import { getAssignedShipments, getAllShipments } from './shipmentService';
 import { getPendingApprovals } from './approvalService';
 import { getAllUsers } from './userService';
 import { getTasksByUser, getPutawayStatistics, getPickingStatistics, getPickingItems, getPutawayItems } from './taskService';
