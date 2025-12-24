@@ -7,7 +7,7 @@ import Loading from '../../components/common/Loading';
 import Alert from '../../components/common/Alert';
 import { Progress } from '../../components/common/Progress';
 import VerificationResult from '../../components/inbound/VerificationResult';
-import { getAllShipments } from '../../services/shipmentService';
+import { getAssignedShipments } from '../../services/shipmentService';
 import { getShipmentItemsWithLocations, verifyPackage, dispatchShipmentItem } from '../../services/inboundVerificationService';
 
 export default function Outbound() {
@@ -30,7 +30,7 @@ export default function Outbound() {
 
   const fetchOutboundShipments = async () => {
     try {
-      const data = await getAllShipments();
+      const data = await getAssignedShipments();
       const outbound = data.filter(s => s.shipmentType === 'OUTBOUND' && s.status !== 'COMPLETED');
       setShipments(outbound);
     } catch (err) {

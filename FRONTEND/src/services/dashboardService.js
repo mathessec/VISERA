@@ -1,4 +1,4 @@
-import { getAllShipments } from './shipmentService';
+import { getAssignedShipments } from './shipmentService';
 import { getPendingApprovals } from './approvalService';
 import { getAllUsers } from './userService';
 import { getTasksByUser, getPutawayStatistics, getPickingStatistics, getPickingItems, getPutawayItems } from './taskService';
@@ -417,7 +417,7 @@ export const getWorkerDashboardMetrics = async (userId) => {
 
     // Fetch all required data in parallel, but handle errors gracefully
     const [shipmentsResult, tasksResult, putawayStatsResult, pickingStatsResult, pickingItemsResult, putawayItemsResult] = await Promise.allSettled([
-      getAllShipments(),
+      getAssignedShipments(),
       getTasksByUser(userId),
       getPutawayStatistics(userId),
       getPickingStatistics(userId),
@@ -453,20 +453,8 @@ export const getWorkerDashboardMetrics = async (userId) => {
       console.error('Error fetching putaway items:', putawayItemsResult.reason);
     }
 
-    // Ensure userId is a number for comparison
-    const userIdNum = typeof userId === 'string' ? parseInt(userId, 10) : userId;
-
-    // Filter shipments assigned to this worker
-    const assignedShipments = shipments.filter((shipment) => {
-      if (!shipment.assignedWorkers || !Array.isArray(shipment.assignedWorkers)) {
-        return false;
-      }
-      // Compare with type coercion to handle both string and number IDs
-      return shipment.assignedWorkers.some((worker) => {
-        const workerId = typeof worker.id === 'string' ? parseInt(worker.id, 10) : worker.id;
-        return workerId === userIdNum;
-      });
-    });
+    // Backend now filters shipments by worker, so use shipments directly as assignedShipments
+    const assignedShipments = shipments;
 
     // Calculate metrics
     // Pending Inbound: Count of INBOUND shipments assigned to worker with status != COMPLETED
@@ -474,26 +462,10 @@ export const getWorkerDashboardMetrics = async (userId) => {
       (s) => s.shipmentType === 'INBOUND' && s.status && s.status !== 'COMPLETED'
     ).length;
 
-    // Pending Outbound: Count of ALL OUTBOUND shipments with status != COMPLETED
-    // (Workers can work on any outbound shipment, not just assigned ones - consistent with Outbound Verification page)
-    const allOutboundShipments = shipments.filter(
+    // Pending Outbound: Count of OUTBOUND shipments assigned to worker with status != COMPLETED
+    const pendingOutbound = assignedShipments.filter(
       (s) => s.shipmentType === 'OUTBOUND' && s.status && s.status !== 'COMPLETED'
-    );
-    
-    // Count unique shipments with pending picking tasks using pickingItems (which have shipmentId)
-    const pickingTasksByShipment = new Set();
-    pickingItems
-      .filter((item) => item.status && item.status !== 'COMPLETED' && item.shipmentId)
-      .forEach((item) => {
-        pickingTasksByShipment.add(item.shipmentId);
-      });
-    
-    // Pending outbound is the max of all outbound shipments or shipments with picking tasks
-    // This ensures we count all available outbound shipments, not just assigned ones
-    const pendingOutbound = Math.max(
-      allOutboundShipments.length,
-      pickingTasksByShipment.size
-    );
+    ).length;
 
     // Pending Putaway: From putaway statistics
     const pendingPutaway = putawayStats
@@ -616,13 +588,13 @@ export const getWorkerDashboardMetrics = async (userId) => {
       });
 
     // Get shipment details for these shipments
-    // Use ALL outbound shipments (not just assigned ones) to match Outbound Verification page behavior
+    // Use assigned outbound shipments (backend now filters by worker)
     const outboundShipmentIds = Array.from(pickingItemsByShipment.keys());
-    const outboundShipmentsWithTasks = allOutboundShipments
+    const outboundShipmentsWithTasks = assignedShipments
       .filter((s) => 
+        s.shipmentType === 'OUTBOUND' &&
         s.status && 
         s.status !== 'COMPLETED'
-        // Include all outbound shipments (not just those with picking tasks)
       )
       .sort((a, b) => {
         // Sort by deadline (earliest first)

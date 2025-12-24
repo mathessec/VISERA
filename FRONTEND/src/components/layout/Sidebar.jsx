@@ -34,7 +34,6 @@ const menuByRole = {
     { name: 'Outbound Verification', icon: Truck, path: '/worker/outbound' },
     { name: 'Putaway', icon: MapPin, path: '/worker/putaway' },
     { name: 'Outbound Picking', icon: ShoppingCart, path: '/worker/picking' },
-    { name: 'Inventory', icon: Package2, path: '/inventory/stock' },
     { name: 'Issue Reporting', icon: AlertCircle, path: '/worker/issues' },
   ],
 };
