@@ -17,3 +17,4 @@ public class BinAllocationDTO {
     private Integer quantity;
 }
 
+

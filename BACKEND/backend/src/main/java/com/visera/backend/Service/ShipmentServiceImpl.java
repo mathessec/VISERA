@@ -11,6 +11,7 @@ import com.visera.backend.Repository.ShipmentRepository;
 import com.visera.backend.Repository.ShipmentWorkerRepository;
 import com.visera.backend.Repository.ShipmentItemRepository;
 import com.visera.backend.Repository.UserRepository;
+import com.visera.backend.Repository.IssueRepository;
 
 @Service
 public class ShipmentServiceImpl implements ShipmentService {
@@ -19,16 +20,19 @@ public class ShipmentServiceImpl implements ShipmentService {
     private final UserRepository userRepository;
     private final ShipmentWorkerRepository shipmentWorkerRepository;
     private final ShipmentItemRepository shipmentItemRepository;
+    private final IssueRepository issueRepository;
 
     public ShipmentServiceImpl(
             ShipmentRepository repo, 
             UserRepository userRepository,
             ShipmentWorkerRepository shipmentWorkerRepository,
-            ShipmentItemRepository shipmentItemRepository) {
+            ShipmentItemRepository shipmentItemRepository,
+            IssueRepository issueRepository) {
         this.repo = repo;
         this.userRepository = userRepository;
         this.shipmentWorkerRepository = shipmentWorkerRepository;
         this.shipmentItemRepository = shipmentItemRepository;
+        this.issueRepository = issueRepository;
     }
 
     @Override
@@ -72,7 +76,13 @@ public class ShipmentServiceImpl implements ShipmentService {
         Shipment shipment = repo.findById((long) id)
                 .orElseThrow(() -> new RuntimeException("Shipment not found with id: " + id));
         
-        // Delete related shipment items first
+        // Delete related issues first
+        List<com.visera.backend.Entity.Issue> issues = issueRepository.findByShipmentId((long) id);
+        if (!issues.isEmpty()) {
+            issueRepository.deleteAll(issues);
+        }
+        
+        // Delete related shipment items
         shipmentItemRepository.findByShipmentId((long) id).forEach(item -> {
             shipmentItemRepository.deleteById(item.getId());
         });
