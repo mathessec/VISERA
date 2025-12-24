@@ -19,3 +19,4 @@ public class ZoneProductAllocationDTO {
     private List<BinAllocationDTO> binAllocations;
 }
 
+

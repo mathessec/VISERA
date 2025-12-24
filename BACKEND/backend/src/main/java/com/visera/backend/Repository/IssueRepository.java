@@ -16,5 +16,7 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
     List<Issue> findByStatusOrderByCreatedAtDesc(String status);
 
     List<Issue> findAllByOrderByCreatedAtDesc();
+
+    List<Issue> findByShipmentId(Long shipmentId);
 }
 
