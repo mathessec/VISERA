@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Package, Scan, CheckCircle, AlertTriangle, Upload, Camera, MapPin, Truck } from 'lucide-react';
 import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -8,9 +9,10 @@ import Alert from '../../components/common/Alert';
 import { Progress } from '../../components/common/Progress';
 import VerificationResult from '../../components/inbound/VerificationResult';
 import { getAssignedShipments } from '../../services/shipmentService';
-import { getShipmentItemsWithLocations, verifyPackage, dispatchShipmentItem } from '../../services/inboundVerificationService';
+import { getShipmentItemsWithLocations, verifyPackage } from '../../services/inboundVerificationService';
 
 export default function Outbound() {
+  const navigate = useNavigate();
   const [shipments, setShipments] = useState([]);
   const [selectedShipment, setSelectedShipment] = useState(null);
   const [packages, setPackages] = useState([]);
@@ -20,7 +22,6 @@ export default function Outbound() {
   const [verificationResult, setVerificationResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
-  const [dispatching, setDispatching] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
 
@@ -92,6 +93,14 @@ export default function Outbound() {
       // Reload packages to update status after verification
       const items = await getShipmentItemsWithLocations(selectedShipment.id);
       setPackages(items);
+      
+      // Navigate to picking page if verification is successful
+      if (result.matched && result.autoAssigned) {
+        // Small delay to show success message before navigation
+        setTimeout(() => {
+          navigate('/worker/picking');
+        }, 1000);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Verification failed');
     } finally {
@@ -105,34 +114,6 @@ export default function Outbound() {
     setVerificationResult(null);
     setImageFile(null);
     setImagePreview(null);
-  };
-
-  const handleDispatch = async (pkg) => {
-    if (!pkg || pkg.status !== 'VERIFIED') {
-      setError('Only verified packages can be dispatched');
-      return;
-    }
-
-    try {
-      setDispatching(true);
-      setError('');
-      await dispatchShipmentItem(pkg.id);
-      
-      // Reload packages to update status after dispatch
-      const items = await getShipmentItemsWithLocations(selectedShipment.id);
-      setPackages(items);
-      
-      // Clear selection if the dispatched package was selected
-      if (selectedPackage?.id === pkg.id) {
-        setSelectedPackage(null);
-        setVerificationResult(null);
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to dispatch package');
-      console.error('Error dispatching package:', err);
-    } finally {
-      setDispatching(false);
-    }
   };
 
   const getVerifiedCount = () => {
@@ -290,30 +271,6 @@ export default function Outbound() {
                           }>
                             {pkg.status || 'PENDING'}
                           </Badge>
-                          {pkg.status === 'VERIFIED' && (
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDispatch(pkg);
-                              }}
-                              disabled={dispatching}
-                              className="text-xs"
-                            >
-                              {dispatching ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1" />
-                                  Dispatching...
-                                </>
-                              ) : (
-                                <>
-                                  <Truck size={14} className="mr-1" />
-                                  Dispatch
-                                </>
-                              )}
-                            </Button>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -413,11 +370,6 @@ export default function Outbound() {
                       onRequestApproval={() => {
                         // Approval already submitted by backend
                         handleProceed();
-                      }}
-                      onDispatch={() => {
-                        if (selectedPackage) {
-                          handleDispatch(selectedPackage);
-                        }
                       }}
                       shipmentType="OUTBOUND"
                     />

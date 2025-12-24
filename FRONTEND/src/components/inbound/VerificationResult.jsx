@@ -1,8 +1,8 @@
-import { CheckCircle, XCircle, AlertTriangle, Truck } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
 
-export default function VerificationResult({ result, onProceed, onRequestApproval, onDispatch, shipmentType }) {
+export default function VerificationResult({ result, onProceed, onRequestApproval, shipmentType }) {
   if (!result) return null;
 
   const isMatch = result.matched;
@@ -105,11 +105,12 @@ export default function VerificationResult({ result, onProceed, onRequestApprova
       <div className="flex gap-3 mt-6">
         {isMatch && result.autoAssigned ? (
           <>
-            {shipmentType === 'OUTBOUND' && onDispatch ? (
-              <Button variant="primary" onClick={onDispatch} className="flex-1">
-                <Truck size={20} className="mr-2" />
-                Dispatch Now
-              </Button>
+            {shipmentType === 'OUTBOUND' ? (
+              <div className="flex-1">
+                <Badge variant="green" className="text-sm">
+                  Verification successful! Redirecting to picking page...
+                </Badge>
+              </div>
             ) : (
               <Button variant="primary" onClick={onProceed} className="flex-1">
                 <CheckCircle size={20} className="mr-2" />
