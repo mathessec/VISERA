@@ -221,6 +221,7 @@ public class InboundVerificationServiceImpl implements InboundVerificationServic
                         Map<String, Object> map = new HashMap<>();
                         map.put("binId", ba.getBinId());
                         map.put("binCode", ba.getBinCode());
+                        map.put("binName", ba.getBinName()); // Store binName as fallback
                         map.put("quantity", ba.getQuantity());
                         return map;
                     })

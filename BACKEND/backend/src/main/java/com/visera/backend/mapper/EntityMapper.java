@@ -225,7 +225,8 @@ public class EntityMapper {
         if (task.getSuggestedBin() != null) {
             Bin bin = task.getSuggestedBin();
             dto.setSuggestedBinId(bin.getId());
-            dto.setSuggestedBinCode(bin.getCode());
+            // Use bin code if available, otherwise fall back to bin name (consistent with formatBinLocation)
+            dto.setSuggestedBinCode(bin.getCode() != null ? bin.getCode() : bin.getName());
             
             if (bin.getRack() != null) {
                 Rack rack = bin.getRack();
@@ -258,9 +259,14 @@ public class EntityMapper {
                 }
                 
                 for (Map<String, Object> alloc : allocations) {
+                    // Use binCode if available, otherwise fall back to binName (for backward compatibility)
+                    String binCode = alloc.get("binCode") != null ? alloc.get("binCode").toString() : null;
+                    if (binCode == null && alloc.get("binName") != null) {
+                        binCode = alloc.get("binName").toString();
+                    }
                     BinAllocation binAlloc = BinAllocation.builder()
                         .binId(Long.valueOf(alloc.get("binId").toString()))
-                        .binCode(alloc.get("binCode") != null ? alloc.get("binCode").toString() : null)
+                        .binCode(binCode)
                         .quantity(Integer.valueOf(alloc.get("quantity").toString()))
                         .build();
                     allocationPlan.add(binAlloc);
@@ -309,7 +315,8 @@ public class EntityMapper {
         if (task.getSuggestedBin() != null) {
             Bin bin = task.getSuggestedBin();
             dto.setSuggestedBinId(bin.getId());
-            dto.setSuggestedBinCode(bin.getCode());
+            // Use bin code if available, otherwise fall back to bin name (consistent with formatBinLocation)
+            dto.setSuggestedBinCode(bin.getCode() != null ? bin.getCode() : bin.getName());
             
             if (bin.getRack() != null) {
                 Rack rack = bin.getRack();
