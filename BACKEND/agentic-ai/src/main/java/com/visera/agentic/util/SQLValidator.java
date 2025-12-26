@@ -5,6 +5,13 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class SQLValidator {
 
+	// Allowed tables for read-only queries
+	private static final String[] ALLOWED_TABLES = {
+		"products", "skus", "shipments", "shipment_items", "shipment_workers",
+		"tasks", "inventory_stock", "bins", "racks", "zones",
+		"notifications", "approvals", "verification_logs", "issues", "users"
+	};
+
 	public static void validate(String sql) {
 		// Normalize: lowercase, collapse whitespace
 		String q = sql
@@ -33,11 +40,25 @@ public class SQLValidator {
 			throw new RuntimeException("Unsafe SQL detected and blocked");
 		}
 
-		// ✅ Rule 3: Must read ONLY from products table
-		if (!q.contains(" from products")) {
-			throw new RuntimeException("Query must read only from products table");
+		// ✅ Rule 3: Must read ONLY from allowed tables
+		boolean isValidTable = false;
+		for (String allowedTable : ALLOWED_TABLES) {
+			if (q.contains(" from " + allowedTable) || 
+				q.contains(" from " + allowedTable + " ") ||
+				q.contains(" from " + allowedTable + "\n") ||
+				q.contains(" from " + allowedTable + ";")) {
+				isValidTable = true;
+				break;
+			}
+		}
+
+		if (!isValidTable) {
+			throw new RuntimeException("Query must read only from allowed tables: " + String.join(", ", ALLOWED_TABLES));
+		}
+
+		// ✅ Rule 4: Block password field selection
+		if (q.contains("password") || q.contains("Password")) {
+			throw new RuntimeException("Password field cannot be selected");
 		}
 	}
 }
-
-

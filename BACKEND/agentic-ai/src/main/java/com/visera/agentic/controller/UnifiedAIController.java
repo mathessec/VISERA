@@ -1,18 +1,18 @@
 package com.visera.agentic.controller;
 
-import com.visera.agentic.service.ProductAIService;
+import com.visera.agentic.service.UnifiedAIService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/ai/products")
+@RequestMapping("/api/ai")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
-public class ProductAIController {
+public class UnifiedAIController {
 
-	private final ProductAIService productAIService;
+	private final UnifiedAIService unifiedAIService;
 
 	@PostMapping("/chat")
 	public Object chat(@RequestBody Map<String, String> body) {
@@ -21,6 +21,10 @@ public class ProductAIController {
 		}
 
 		String question = body.get("question").trim();
-		return productAIService.askProductQuestion(question);
+		return unifiedAIService.askQuestion(question);
 	}
 }
+
+
+
+
