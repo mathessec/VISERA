@@ -1,15 +1,23 @@
 package com.visera.agentic.client;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
@@ -62,11 +70,6 @@ public class GeminiClient {
 		}
 	}
 
-	// Backward compatibility - delegate to unified method
-	public String generateProductSQL(String question) {
-		return generateSQL(question);
-	}
-
 	private String buildUnifiedPrompt(String question) {
 		return """
 			You are a SQL expert. Analyze the following natural language question and generate a SQL SELECT query.
@@ -111,16 +114,6 @@ public class GeminiClient {
 			   - category (VARCHAR)
 			   - status (VARCHAR) - values: 'Active', 'Inactive', 'LOW_STOCK'
 			   - image_url (VARCHAR)
-			   - created_at (DATETIME)
-			
-			2. skus
-			   - id (BIGINT, PRIMARY KEY)
-			   - product_id (BIGINT, FOREIGN KEY to products.id)
-			   - sku_code (VARCHAR, UNIQUE)
-			   - weight (VARCHAR, nullable)
-			   - dimensions (VARCHAR)
-			   - color (VARCHAR)
-			   - image_url (VARCHAR, nullable)
 			   - created_at (DATETIME)
 			
 			2. skus

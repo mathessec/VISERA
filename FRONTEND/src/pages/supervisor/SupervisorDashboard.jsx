@@ -8,6 +8,7 @@ import Loading from '../../components/common/Loading';
 import Alert from '../../components/common/Alert';
 import { Link } from 'react-router-dom';
 import { getSupervisorDashboardMetrics } from '../../services/dashboardService';
+import FloatingChatButton from '../../components/features/chat/FloatingChatButton';
 
 export default function SupervisorDashboard() {
   const [metrics, setMetrics] = useState({
@@ -188,6 +189,8 @@ export default function SupervisorDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <FloatingChatButton />
     </div>
   );
 }

@@ -1,14 +1,15 @@
-# Agentic AI Service for Products
+# Agentic AI Service
 
-This is a Spring Boot application that uses **real Gemini AI** to convert natural language questions about products into SQL queries and return human-readable answers.
+This is a Spring Boot application that uses **real Gemini AI** to convert natural language questions into SQL queries and return human-readable answers. Supports queries across multiple database entities including products, shipments, inventory, users, and more.
 
 ## Features
 
-- **Real AI Integration**: Uses Google Gemini 1.5 Flash API (not pattern matching)
-- **Natural Language Queries**: Ask questions in plain English about products
+- **Real AI Integration**: Uses Google Gemini 2.5 Flash API (not pattern matching)
+- **Natural Language Queries**: Ask questions in plain English about any entity
+- **Multi-Entity Support**: Supports queries across 15+ database tables with JOINs
 - **SQL Security**: Validates all generated SQL to prevent injection attacks
 - **Read-Only Access**: Only SELECT queries allowed, no data modifications
-- **Product-Focused**: Currently supports queries about the products table
+- **Unified Approach**: Single endpoint handles all entity queries
 
 ## Prerequisites
 
@@ -19,7 +20,7 @@ This is a Spring Boot application that uses **real Gemini AI** to convert natura
 
 ## Setup
 
-1. **Database**: Ensure MySQL is running and `visera_db` database exists with a `products` table
+1. **Database**: Ensure MySQL is running and `visera_db` database exists with required tables (products, skus, shipments, users, etc.)
 
 2. **Configuration**: Update `src/main/resources/application.properties` if needed:
    - Database credentials (default: root/root1234)
@@ -35,23 +36,28 @@ This is a Spring Boot application that uses **real Gemini AI** to convert natura
 
 4. **Verify**: Check logs for "Agentic AI Application Started on port 8082"
 
-## API Endpoint
+## API Endpoints
 
-### POST `/api/ai/products/chat`
+### POST `/api/ai/chat` (Primary Endpoint)
 
-Ask natural language questions about products.
+Ask natural language questions about any entity (products, shipments, inventory, users, etc.).
 
 **Request:**
 ```json
 {
-  "question": "how many active products are there?"
+  "question": "show me all products"
 }
 ```
 
 **Response:**
 ```
-"There are 5 products matching your request."
+Product: Laptop, Code: PROD001, Status: Active, Category: Electronics.
+Product: Mouse, Code: PROD002, Status: Active, Category: Electronics.
 ```
+
+### POST `/api/ai/products/chat` (Backward Compatibility)
+
+Same as `/api/ai/chat` - maintained for backward compatibility with existing clients.
 
 ## Testing with Postman
 
@@ -71,17 +77,23 @@ Ask natural language questions about products.
 
 ## Example Questions
 
+**Product Queries:**
 - "how many active products are there?"
 - "show me all products"
+- "show me product names with their sku codes"
 - "list all inactive products"
 - "how many products are in the Electronics category?"
-- "find product with code PROD001"
-- "what's the total number of products that are currently active?"
+
+**Multi-Entity Queries:**
+- "show me shipments with assigned worker names"
+- "inventory stock with product and bin information"
+- "show me all users with their roles"
+- "tasks assigned to workers"
 
 ## Architecture
 
 ```
-Client Request → ProductAIController → ProductAIService → GeminiClient → Gemini API
+Client Request → UnifiedAIController → UnifiedAIService → GeminiClient → Gemini API
                                                               ↓
                                                          SQLValidator
                                                               ↓
@@ -92,7 +104,8 @@ Client Request → ProductAIController → ProductAIService → GeminiClient →
 
 - ✅ Only SELECT queries allowed
 - ✅ Blocks dangerous SQL keywords (INSERT, UPDATE, DELETE, DROP, etc.)
-- ✅ Restricts queries to `products` table only
+- ✅ Restricts queries to allowed tables only (products, skus, shipments, users, etc.)
+- ✅ Blocks password field selection from users table
 - ✅ Read-only database access
 
 ## Project Structure
@@ -107,9 +120,9 @@ BACKEND/agentic-ai/
     │   ├── java/com/visera/agentic/
     │   │   ├── AgenticAIApplication.java
     │   │   ├── controller/
-    │   │   │   └── ProductAIController.java
+    │   │   │   └── UnifiedAIController.java
     │   │   ├── service/
-    │   │   │   └── ProductAIService.java
+    │   │   │   └── UnifiedAIService.java
     │   │   ├── client/
     │   │   │   └── GeminiClient.java
     │   │   ├── util/
@@ -131,9 +144,17 @@ BACKEND/agentic-ai/
 3. **SQL errors**: Check database connection and table schema
 4. **No response**: Check application logs for detailed error messages
 
-## Next Steps
+## Supported Entities
 
-Once this works perfectly for products, we can extend it to other entities (shipments, inventory, etc.)
+The unified service supports queries across all these database tables:
+- Products, SKUs
+- Shipments, Shipment Items, Shipment Workers
+- Tasks
+- Inventory Stock, Bins, Racks, Zones
+- Users
+- Notifications, Approvals, Verification Logs, Issues
+
+All queries support JOINs to combine data from related tables.
 
 
 

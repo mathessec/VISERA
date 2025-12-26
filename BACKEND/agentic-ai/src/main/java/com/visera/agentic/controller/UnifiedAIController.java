@@ -23,6 +23,13 @@ public class UnifiedAIController {
 		String question = body.get("question").trim();
 		return unifiedAIService.askQuestion(question);
 	}
+
+	// Backward compatibility endpoint - delegates to unified service
+	@PostMapping("/products/chat")
+	public Object productChat(@RequestBody Map<String, String> body) {
+		// Same validation and logic as /chat
+		return chat(body);
+	}
 }
 
 

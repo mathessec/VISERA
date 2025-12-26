@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import Loading from '../../components/common/Loading';
 import Alert from '../../components/common/Alert';
 import { getAnalytics } from '../../services/reportService';
+import FloatingChatButton from '../../components/features/chat/FloatingChatButton';
 
 const quickLinks = [
   { label: 'Manage Products', path: '/products', icon: Package },
@@ -224,6 +225,8 @@ export default function AdminDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <FloatingChatButton />
     </div>
   );
 }

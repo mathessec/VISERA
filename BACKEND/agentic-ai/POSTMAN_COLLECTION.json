@@ -1,8 +1,8 @@
 {
 	"info": {
 		"_postman_id": "agentic-ai-products",
-		"name": "Agentic AI - Products",
-		"description": "Postman collection for testing Agentic AI Product queries",
+		"name": "Agentic AI - Unified Service",
+		"description": "Postman collection for testing Agentic AI queries. Supports all entities (products, shipments, inventory, users, etc.). Both /api/ai/chat and /api/ai/products/chat endpoints work (backward compatibility).",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
