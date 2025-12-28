@@ -47,11 +47,11 @@ export default function Notifications() {
       setNotifications(notifications.filter((n) => n.id !== id));
       // Mark as read on server
       await markNotificationAsRead(id);
-      // Refresh count from server to ensure accuracy
-      refreshUnreadCount();
+      // No need to refresh immediately - optimistic update handles UI
+      // Periodic sync (every 30s) will keep it accurate
     } catch (err) {
       setError("Failed to mark notification as read");
-      // If error, refresh to get correct count
+      // If error, refresh to get correct count and restore optimistic update
       refreshUnreadCount();
     }
   };
@@ -67,11 +67,11 @@ export default function Notifications() {
       setNotifications(notifications.filter((n) => n.read));
       // Mark all as read on server
       await Promise.all(unread.map((n) => markNotificationAsRead(n.id)));
-      // Refresh count from server to ensure accuracy
-      refreshUnreadCount();
+      // No need to refresh immediately - optimistic update handles UI
+      // Periodic sync (every 30s) will keep it accurate
     } catch (err) {
       setError("Failed to mark all as read");
-      // If error, refresh to get correct count
+      // If error, refresh to get correct count and restore optimistic update
       refreshUnreadCount();
     }
   };

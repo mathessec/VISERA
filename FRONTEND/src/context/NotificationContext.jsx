@@ -24,7 +24,8 @@ export function NotificationProvider({ children, addToast }) {
       if (!userId) return;
 
       const notifications = await getNotificationsByUser(parseInt(userId));
-      const unread = notifications.filter((n) => !n.read || !n.isRead);
+      // DTO uses 'read' field (boolean)
+      const unread = notifications.filter((n) => !n.read);
       setUnreadCount(unread.length);
     } catch (error) {
       console.error('Error fetching notification count:', error);
