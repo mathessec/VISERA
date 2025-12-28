@@ -8,5 +8,6 @@ public interface NotificationService {
     Notification createNotification(Notification n);
     List<Notification> getNotificationsByUser(int userId);
     void markAsRead(int id);
+    void deleteNotification(int id);
 }
 

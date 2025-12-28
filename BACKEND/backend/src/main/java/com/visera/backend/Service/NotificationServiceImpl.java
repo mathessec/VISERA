@@ -32,5 +32,10 @@ public class NotificationServiceImpl implements NotificationService {
             repo.save(n);
         });
     }
+
+    @Override
+    public void deleteNotification(int id) {
+        repo.deleteById((long) id);
+    }
 }
 

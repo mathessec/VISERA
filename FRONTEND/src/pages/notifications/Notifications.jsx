@@ -9,6 +9,7 @@ import { getUserId } from "../../services/authService";
 import {
   getNotificationsByUser,
   markNotificationAsRead,
+  deleteNotification,
 } from "../../services/notificationService";
 import { formatDateTime, formatRelativeTime } from "../../utils/formatters";
 import { useNotification } from "../../context/NotificationContext";
@@ -45,12 +46,12 @@ export default function Notifications() {
       decrementUnreadCount();
       // Remove notification from list
       setNotifications(notifications.filter((n) => n.id !== id));
-      // Mark as read on server
-      await markNotificationAsRead(id);
+      // Delete notification from database
+      await deleteNotification(id);
       // No need to refresh immediately - optimistic update handles UI
       // Periodic sync (every 30s) will keep it accurate
     } catch (err) {
-      setError("Failed to mark notification as read");
+      setError("Failed to delete notification");
       // If error, refresh to get correct count and restore optimistic update
       refreshUnreadCount();
     }
@@ -65,12 +66,12 @@ export default function Notifications() {
       decrementUnreadCountBy(unreadCount);
       // Remove all unread notifications from list
       setNotifications(notifications.filter((n) => n.read));
-      // Mark all as read on server
-      await Promise.all(unread.map((n) => markNotificationAsRead(n.id)));
+      // Delete all unread notifications from database
+      await Promise.all(unread.map((n) => deleteNotification(n.id)));
       // No need to refresh immediately - optimistic update handles UI
       // Periodic sync (every 30s) will keep it accurate
     } catch (err) {
-      setError("Failed to mark all as read");
+      setError("Failed to delete notifications");
       // If error, refresh to get correct count and restore optimistic update
       refreshUnreadCount();
     }

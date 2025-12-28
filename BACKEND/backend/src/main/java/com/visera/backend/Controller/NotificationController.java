@@ -43,6 +43,13 @@ public class NotificationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteNotification(@PathVariable int id) {
+        notificationService.deleteNotification(id);
+        return ResponseEntity.noContent().build();
+    }
+
     //DTO
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'WORKER')")
     @GetMapping("/user/{userId}")
