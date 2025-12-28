@@ -17,10 +17,14 @@ public class ApprovalServiceImpl implements ApprovalService {
 
     private final ApprovalRepository approvalRepository;
     private final ObjectMapper objectMapper;
+    private final NotificationEventService notificationEventService;
 
-    public ApprovalServiceImpl(ApprovalRepository approvalRepository) {
+    public ApprovalServiceImpl(
+            ApprovalRepository approvalRepository,
+            NotificationEventService notificationEventService) {
         this.approvalRepository = approvalRepository;
         this.objectMapper = new ObjectMapper();
+        this.notificationEventService = notificationEventService;
     }
 
     @Override
@@ -39,7 +43,12 @@ public class ApprovalServiceImpl implements ApprovalService {
                 .expectedData(expectedData)
                 .build();
             
-            return approvalRepository.save(approval);
+            Approval savedApproval = approvalRepository.save(approval);
+            
+            // Send real-time notification to supervisors
+            notificationEventService.notifyNewApproval(savedApproval);
+            
+            return savedApproval;
         } catch (Exception e) {
             throw new RuntimeException("Failed to create approval request: " + e.getMessage());
         }

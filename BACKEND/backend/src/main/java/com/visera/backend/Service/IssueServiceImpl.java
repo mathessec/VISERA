@@ -16,10 +16,15 @@ public class IssueServiceImpl implements IssueService {
 
     private final IssueRepository issueRepository;
     private final UserRepository userRepository;
+    private final NotificationEventService notificationEventService;
 
-    public IssueServiceImpl(IssueRepository issueRepository, UserRepository userRepository) {
+    public IssueServiceImpl(
+            IssueRepository issueRepository,
+            UserRepository userRepository,
+            NotificationEventService notificationEventService) {
         this.issueRepository = issueRepository;
         this.userRepository = userRepository;
+        this.notificationEventService = notificationEventService;
     }
 
     @Override
@@ -29,7 +34,12 @@ public class IssueServiceImpl implements IssueService {
         if (issue.getStatus() == null) {
             issue.setStatus("OPEN");
         }
-        return issueRepository.save(issue);
+        Issue savedIssue = issueRepository.save(issue);
+        
+        // Send real-time notification to supervisors
+        notificationEventService.notifyNewIssue(savedIssue);
+        
+        return savedIssue;
     }
 
     @Override
