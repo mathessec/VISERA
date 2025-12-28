@@ -93,8 +93,16 @@ export function NotificationProvider({ children, addToast }) {
     fetchUnreadCount();
   }, [fetchUnreadCount]);
 
+  const decrementUnreadCount = useCallback(() => {
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+  }, []);
+
+  const decrementUnreadCountBy = useCallback((count) => {
+    setUnreadCount((prev) => Math.max(0, prev - count));
+  }, []);
+
   return (
-    <NotificationContext.Provider value={{ unreadCount, refreshUnreadCount }}>
+    <NotificationContext.Provider value={{ unreadCount, refreshUnreadCount, decrementUnreadCount, decrementUnreadCountBy }}>
       {children}
     </NotificationContext.Provider>
   );

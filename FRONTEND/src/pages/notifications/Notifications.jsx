@@ -17,7 +17,7 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { refreshUnreadCount } = useNotification();
+  const { refreshUnreadCount, decrementUnreadCount, decrementUnreadCountBy } = useNotification();
 
   useEffect(() => {
     fetchNotifications();
@@ -41,26 +41,38 @@ export default function Notifications() {
 
   const handleMarkAsRead = async (id) => {
     try {
-      await markNotificationAsRead(id);
-      // Remove notification from list instead of just marking as read
+      // Optimistically decrement count immediately
+      decrementUnreadCount();
+      // Remove notification from list
       setNotifications(notifications.filter((n) => n.id !== id));
-      // Refresh unread count in header badge
+      // Mark as read on server
+      await markNotificationAsRead(id);
+      // Refresh count from server to ensure accuracy
       refreshUnreadCount();
     } catch (err) {
       setError("Failed to mark notification as read");
+      // If error, refresh to get correct count
+      refreshUnreadCount();
     }
   };
 
   const handleMarkAllAsRead = async () => {
     try {
       const unread = notifications.filter((n) => !n.read);
-      await Promise.all(unread.map((n) => markNotificationAsRead(n.id)));
+      const unreadCount = unread.length;
+      
+      // Optimistically decrement count immediately
+      decrementUnreadCountBy(unreadCount);
       // Remove all unread notifications from list
       setNotifications(notifications.filter((n) => n.read));
-      // Refresh unread count in header badge
+      // Mark all as read on server
+      await Promise.all(unread.map((n) => markNotificationAsRead(n.id)));
+      // Refresh count from server to ensure accuracy
       refreshUnreadCount();
     } catch (err) {
       setError("Failed to mark all as read");
+      // If error, refresh to get correct count
+      refreshUnreadCount();
     }
   };
 
