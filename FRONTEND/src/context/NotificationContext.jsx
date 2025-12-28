@@ -47,8 +47,7 @@ export function NotificationProvider({ children, addToast }) {
       fetchUnreadCount();
     }, 30000);
 
-    // Get role and userId for WebSocket connection and message handling
-    const role = getRole();
+    // Get userId for WebSocket connection and message handling
     const userId = getUserId();
     
     const handleWebSocketMessage = (notification) => {
