@@ -3,6 +3,7 @@ package com.visera.backend.Service;
 import com.visera.backend.Entity.Approval;
 import com.visera.backend.Entity.Issue;
 import com.visera.backend.Entity.Notification;
+import com.visera.backend.Entity.Shipment;
 import com.visera.backend.Entity.User;
 import com.visera.backend.Repository.UserRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -104,6 +105,74 @@ public class NotificationEventService {
         } catch (Exception e) {
             // Log error but don't fail the issue creation
             System.err.println("Failed to send issue notification: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void notifyInboundShipmentAssigned(Shipment shipment, User worker) {
+        try {
+            // Create notification payload for WebSocket
+            Map<String, Object> notificationPayload = new HashMap<>();
+            notificationPayload.put("id", shipment.getId());
+            notificationPayload.put("title", "New Inbound Shipment Assigned");
+            notificationPayload.put("message", "You have been assigned to inbound shipment #" + shipment.getId());
+            notificationPayload.put("type", "INFO");
+            notificationPayload.put("category", "INBOUND_SHIPMENT");
+            notificationPayload.put("entityId", shipment.getId());
+            notificationPayload.put("workerId", worker.getId());
+            notificationPayload.put("timestamp", LocalDateTime.now().toString());
+            notificationPayload.put("link", "/worker/inbound");
+
+            // Create database notification for this worker
+            Notification notification = Notification.builder()
+                    .user(worker)
+                    .title("New Inbound Shipment Assigned")
+                    .message("You have been assigned to inbound shipment #" + shipment.getId())
+                    .type("INFO")
+                    .isRead(false)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            notificationService.createNotification(notification);
+
+            // Publish WebSocket message to workers topic (will be filtered by workerId on frontend)
+            messagingTemplate.convertAndSend("/topic/notifications/workers", notificationPayload);
+        } catch (Exception e) {
+            // Log error but don't fail the assignment
+            System.err.println("Failed to send inbound shipment notification: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void notifyOutboundShipmentAssigned(Shipment shipment, User worker) {
+        try {
+            // Create notification payload for WebSocket
+            Map<String, Object> notificationPayload = new HashMap<>();
+            notificationPayload.put("id", shipment.getId());
+            notificationPayload.put("title", "New Outbound Shipment Assigned");
+            notificationPayload.put("message", "You have been assigned to outbound shipment #" + shipment.getId());
+            notificationPayload.put("type", "INFO");
+            notificationPayload.put("category", "OUTBOUND_SHIPMENT");
+            notificationPayload.put("entityId", shipment.getId());
+            notificationPayload.put("workerId", worker.getId());
+            notificationPayload.put("timestamp", LocalDateTime.now().toString());
+            notificationPayload.put("link", "/worker/outbound");
+
+            // Create database notification for this worker
+            Notification notification = Notification.builder()
+                    .user(worker)
+                    .title("New Outbound Shipment Assigned")
+                    .message("You have been assigned to outbound shipment #" + shipment.getId())
+                    .type("INFO")
+                    .isRead(false)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            notificationService.createNotification(notification);
+
+            // Publish WebSocket message to workers topic (will be filtered by workerId on frontend)
+            messagingTemplate.convertAndSend("/topic/notifications/workers", notificationPayload);
+        } catch (Exception e) {
+            // Log error but don't fail the assignment
+            System.err.println("Failed to send outbound shipment notification: " + e.getMessage());
             e.printStackTrace();
         }
     }

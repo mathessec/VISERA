@@ -19,14 +19,17 @@ public class ShipmentWorkerServiceImpl implements ShipmentWorkerService {
     private final ShipmentWorkerRepository shipmentWorkerRepository;
     private final ShipmentRepository shipmentRepository;
     private final UserRepository userRepository;
+    private final NotificationEventService notificationEventService;
 
     public ShipmentWorkerServiceImpl(
             ShipmentWorkerRepository shipmentWorkerRepository,
             ShipmentRepository shipmentRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            NotificationEventService notificationEventService) {
         this.shipmentWorkerRepository = shipmentWorkerRepository;
         this.shipmentRepository = shipmentRepository;
         this.userRepository = userRepository;
+        this.notificationEventService = notificationEventService;
     }
 
     @Override
@@ -49,6 +52,14 @@ public class ShipmentWorkerServiceImpl implements ShipmentWorkerService {
                         .worker(worker)
                         .build();
                 shipmentWorkerRepository.save(shipmentWorker);
+                
+                // Send notification to worker about new assignment
+                String shipmentType = shipment.getShipmentType();
+                if ("INBOUND".equals(shipmentType)) {
+                    notificationEventService.notifyInboundShipmentAssigned(shipment, worker);
+                } else if ("OUTBOUND".equals(shipmentType)) {
+                    notificationEventService.notifyOutboundShipmentAssigned(shipment, worker);
+                }
             }
         }
     }

@@ -25,7 +25,7 @@ async function loadStomp() {
   return Stomp;
 }
 
-export async function connectWebSocket(onMessageCallback, onErrorCallback) {
+export async function connectWebSocket(onMessageCallback, onErrorCallback, role = null, userId = null) {
   if (stompClient && stompClient.connected) {
     return stompClient;
   }
@@ -46,15 +46,31 @@ export async function connectWebSocket(onMessageCallback, onErrorCallback) {
       reconnectAttempts = 0;
       console.log('WebSocket connected');
 
-      // Subscribe to supervisor notifications
-      stompClient.subscribe('/topic/notifications/supervisors', (message) => {
-        try {
-          const notification = JSON.parse(message.body);
-          onMessageCallback(notification);
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
-        }
-      });
+      // Subscribe based on role
+      if (role === 'SUPERVISOR') {
+        // Subscribe to supervisor notifications
+        stompClient.subscribe('/topic/notifications/supervisors', (message) => {
+          try {
+            const notification = JSON.parse(message.body);
+            onMessageCallback(notification);
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
+        });
+        console.log('Subscribed to /topic/notifications/supervisors');
+      } else if (role === 'WORKER') {
+        // Subscribe to worker notifications
+        stompClient.subscribe('/topic/notifications/workers', (message) => {
+          try {
+            const notification = JSON.parse(message.body);
+            // Filtering by workerId is handled in NotificationContext
+            onMessageCallback(notification);
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
+        });
+        console.log('Subscribed to /topic/notifications/workers');
+      }
     },
     (error) => {
       // Connection error
@@ -69,7 +85,7 @@ export async function connectWebSocket(onMessageCallback, onErrorCallback) {
         reconnectAttempts++;
         setTimeout(() => {
           console.log(`Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
-          connectWebSocket(onMessageCallback, onErrorCallback);
+          connectWebSocket(onMessageCallback, onErrorCallback, role, userId);
         }, RECONNECT_DELAY * reconnectAttempts);
       } else {
         console.error('Max reconnection attempts reached');

@@ -33,9 +33,9 @@ export function NotificationProvider({ children, addToast }) {
   }, []);
 
   useEffect(() => {
-    // Only connect for supervisors
+    // Only connect for supervisors and workers
     const role = getRole();
-    if (role !== 'SUPERVISOR' || !isAuthenticated()) {
+    if ((role !== 'SUPERVISOR' && role !== 'WORKER') || !isAuthenticated()) {
       return;
     }
 
@@ -47,8 +47,24 @@ export function NotificationProvider({ children, addToast }) {
       fetchUnreadCount();
     }, 30000);
 
-    // Connect to WebSocket
+    // Get role and userId for WebSocket connection and message handling
+    const role = getRole();
+    const userId = getUserId();
+    
     const handleWebSocketMessage = (notification) => {
+      // For workers, filter notifications by workerId
+      if (role === 'WORKER' && notification.workerId) {
+        const currentUserId = parseInt(userId);
+        // Handle both number and string types from JSON
+        const notificationWorkerId = typeof notification.workerId === 'number' 
+          ? notification.workerId 
+          : parseInt(notification.workerId);
+        if (notificationWorkerId !== currentUserId) {
+          // This notification is not for this worker, ignore it
+          return;
+        }
+      }
+
       // Map backend notification type to frontend toast type
       const toastTypeMap = {
         ALERT: 'warning',
@@ -79,7 +95,7 @@ export function NotificationProvider({ children, addToast }) {
     };
 
     // Connect to WebSocket (async)
-    connectWebSocket(handleWebSocketMessage, handleWebSocketError).catch((error) => {
+    connectWebSocket(handleWebSocketMessage, handleWebSocketError, role, userId).catch((error) => {
       console.error('Failed to connect WebSocket:', error);
     });
 
