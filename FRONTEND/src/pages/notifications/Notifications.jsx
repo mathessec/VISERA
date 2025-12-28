@@ -11,11 +11,13 @@ import {
   markNotificationAsRead,
 } from "../../services/notificationService";
 import { formatDateTime, formatRelativeTime } from "../../utils/formatters";
+import { useNotification } from "../../context/NotificationContext";
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { refreshUnreadCount } = useNotification();
 
   useEffect(() => {
     fetchNotifications();
@@ -40,9 +42,10 @@ export default function Notifications() {
   const handleMarkAsRead = async (id) => {
     try {
       await markNotificationAsRead(id);
-      setNotifications(
-        notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
-      );
+      // Remove notification from list instead of just marking as read
+      setNotifications(notifications.filter((n) => n.id !== id));
+      // Refresh unread count in header badge
+      refreshUnreadCount();
     } catch (err) {
       setError("Failed to mark notification as read");
     }
@@ -52,7 +55,10 @@ export default function Notifications() {
     try {
       const unread = notifications.filter((n) => !n.read);
       await Promise.all(unread.map((n) => markNotificationAsRead(n.id)));
-      setNotifications(notifications.map((n) => ({ ...n, read: true })));
+      // Remove all unread notifications from list
+      setNotifications(notifications.filter((n) => n.read));
+      // Refresh unread count in header badge
+      refreshUnreadCount();
     } catch (err) {
       setError("Failed to mark all as read");
     }
