@@ -114,6 +114,12 @@ export default function Inbound() {
     return packages.filter(p => isPackageVerified(p)).length;
   };
 
+  const areAllPackagesVerified = (shipment) => {
+    const verifiedCount = shipment.verifiedCount || 0;
+    const packageCount = shipment.packageCount || 0;
+    return packageCount > 0 && verifiedCount >= packageCount;
+  };
+
   if (loading) return <Loading text="Loading inbound shipments..." />;
 
   return (
@@ -167,14 +173,25 @@ export default function Inbound() {
                         {shipment.verifiedCount || 0} / {shipment.packageCount || 0} packages verified
                       </p>
                     </div>
-                    <Button
-                      variant="primary"
-                      className="w-full"
-                      onClick={() => handleShipmentSelect(shipment)}
-                    >
-                      <Scan size={20} className="mr-2" />
-                      Start Processing
-                    </Button>
+                    {areAllPackagesVerified(shipment) ? (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        disabled
+                      >
+                        <CheckCircle size={20} className="mr-2" />
+                        All Packages Verified
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        className="w-full"
+                        onClick={() => handleShipmentSelect(shipment)}
+                      >
+                        <Scan size={20} className="mr-2" />
+                        Start Processing
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))
