@@ -45,12 +45,13 @@ export default function ShipmentEdit() {
       
       // Fetch all required data in parallel
       // Use getWorkers() which is accessible to both ADMIN and SUPERVISOR
-      const [shipmentResult, packagesResult, workersResult, skusResult, assignedWorkersResult] = await Promise.allSettled([
+      const [shipmentResult, packagesResult, workersResult, skusResult, assignedWorkersResult, shipmentsResult] = await Promise.allSettled([
         getShipmentById(id),
         getItemsByShipment(id),
         getWorkers(), // Use getWorkers() which is accessible to ADMIN and SUPERVISOR
         getAllSkus(),
         getAssignedWorkers(id),
+        getAllShipments(), // Fetch all shipments to filter workers
       ]);
 
       // Check if critical requests failed
@@ -71,6 +72,9 @@ export default function ShipmentEdit() {
       if (assignedWorkersResult.status === 'rejected') {
         console.error('Error fetching assigned workers:', assignedWorkersResult.reason);
       }
+      if (shipmentsResult.status === 'rejected') {
+        console.error('Error fetching shipments:', shipmentsResult.reason);
+      }
 
       // Extract successful results
       const shipmentData = shipmentResult.value;
@@ -78,14 +82,45 @@ export default function ShipmentEdit() {
       const workersData = workersResult.status === 'fulfilled' ? workersResult.value : [];
       const skusData = skusResult.status === 'fulfilled' ? skusResult.value : [];
       const assignedWorkersData = assignedWorkersResult.status === 'fulfilled' ? assignedWorkersResult.value : [];
+      const shipmentsData = shipmentsResult.status === 'fulfilled' ? shipmentsResult.value : [];
 
       console.log('Shipment Data:', shipmentData);
       console.log('Packages Data:', packagesData);
       console.log('Assigned Workers Data:', assignedWorkersData);
 
+      // Filter workers to show only free workers + workers assigned to current shipment
+      // Get IDs of workers already assigned to OTHER shipments (not the current one)
+      const assignedWorkerIds = new Set();
+      if (shipmentsData && Array.isArray(shipmentsData)) {
+        shipmentsData
+          .filter((shipment) => 
+            shipment.id !== parseInt(id) && // Exclude current shipment
+            shipment.status && 
+            shipment.status !== 'COMPLETED' // Only consider active shipments
+          )
+          .forEach((shipment) => {
+            if (shipment.assignedWorkers && Array.isArray(shipment.assignedWorkers)) {
+              shipment.assignedWorkers.forEach((worker) => {
+                if (worker.role === 'WORKER' && worker.id) {
+                  assignedWorkerIds.add(worker.id);
+                }
+              });
+            }
+          });
+      }
+
+      // Get IDs of workers assigned to THIS shipment (they should remain visible)
+      const currentShipmentWorkerIds = new Set(
+        assignedWorkersData.map((w) => Number(w.id))
+      );
+
+      // Filter workers: show free workers OR workers assigned to current shipment
+      const availableWorkers = workersData.filter(
+        (worker) => !assignedWorkerIds.has(worker.id) || currentShipmentWorkerIds.has(worker.id)
+      );
+
       // Set workers and SKUs
-      // getWorkers() already returns only workers, so no need to filter by role
-      setWorkers(workersData);
+      setWorkers(availableWorkers);
       setSkus(skusData);
 
       // Populate form with shipment data
