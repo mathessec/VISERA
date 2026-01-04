@@ -1,37 +1,46 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus } from 'lucide-react';
-import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
-import Select from '../../components/common/Select';
-import Input from '../../components/common/Input';
-import MultiSelect from '../../components/common/MultiSelect';
-import PackageInputRow from '../../components/shipments/PackageInputRow';
-import Alert from '../../components/common/Alert';
-import Loading from '../../components/common/Loading';
-import { getShipmentById, updateShipment, assignWorkers, getAssignedWorkers, removeWorker, getAllShipments } from '../../services/shipmentService';
-import { getItemsByShipment, createBatchItems, deleteShipmentItem } from '../../services/shipmentItemService';
-import { getWorkers } from '../../services/userService';
-import { getAllSkus } from '../../services/skuService';
+import { ArrowLeft, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import Alert from "../../components/common/Alert";
+import Button from "../../components/common/Button";
+import Card from "../../components/common/Card";
+import Input from "../../components/common/Input";
+import Loading from "../../components/common/Loading";
+import MultiSelect from "../../components/common/MultiSelect";
+import Select from "../../components/common/Select";
+import PackageInputRow from "../../components/shipments/PackageInputRow";
+import {
+  createBatchItems,
+  deleteShipmentItem,
+  getItemsByShipment,
+} from "../../services/shipmentItemService";
+import {
+  assignWorkers,
+  getAllShipments,
+  getAssignedWorkers,
+  getShipmentById,
+  removeWorker,
+  updateShipment,
+} from "../../services/shipmentService";
+import { getAllSkus } from "../../services/skuService";
+import { getWorkers } from "../../services/userService";
 
 export default function ShipmentEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [workers, setWorkers] = useState([]);
   const [skus, setSkus] = useState([]);
   const [formData, setFormData] = useState({
-    shipmentType: 'INBOUND',
-    status: 'CREATED',
-    deadline: '',
+    shipmentType: "INBOUND",
+    status: "CREATED",
+    deadline: "",
     selectedWorkers: [],
   });
   const [packageCount, setPackageCount] = useState(1);
-  const [packages, setPackages] = useState([
-    { skuId: '', quantity: '' },
-  ]);
+  const [packages, setPackages] = useState([{ skuId: "", quantity: "" }]);
   const [existingPackages, setExistingPackages] = useState([]);
 
   useEffect(() => {
@@ -41,11 +50,18 @@ export default function ShipmentEdit() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      setError('');
-      
+      setError("");
+
       // Fetch all required data in parallel
       // Use getWorkers() which is accessible to both ADMIN and SUPERVISOR
-      const [shipmentResult, packagesResult, workersResult, skusResult, assignedWorkersResult, shipmentsResult] = await Promise.allSettled([
+      const [
+        shipmentResult,
+        packagesResult,
+        workersResult,
+        skusResult,
+        assignedWorkersResult,
+        shipmentsResult,
+      ] = await Promise.allSettled([
         getShipmentById(id),
         getItemsByShipment(id),
         getWorkers(), // Use getWorkers() which is accessible to ADMIN and SUPERVISOR
@@ -55,53 +71,67 @@ export default function ShipmentEdit() {
       ]);
 
       // Check if critical requests failed
-      if (shipmentResult.status === 'rejected') {
+      if (shipmentResult.status === "rejected") {
         throw shipmentResult.reason;
       }
-      if (skusResult.status === 'rejected') {
-        console.error('Error fetching SKUs:', skusResult.reason);
-        throw new Error('Failed to load SKUs. Please refresh the page.');
+      if (skusResult.status === "rejected") {
+        console.error("Error fetching SKUs:", skusResult.reason);
+        throw new Error("Failed to load SKUs. Please refresh the page.");
       }
-      if (workersResult.status === 'rejected') {
-        console.error('Error fetching workers:', workersResult.reason);
-        throw new Error('Failed to load workers. Please refresh the page.');
+      if (workersResult.status === "rejected") {
+        console.error("Error fetching workers:", workersResult.reason);
+        throw new Error("Failed to load workers. Please refresh the page.");
       }
-      if (packagesResult.status === 'rejected') {
-        console.error('Error fetching packages:', packagesResult.reason);
+      if (packagesResult.status === "rejected") {
+        console.error("Error fetching packages:", packagesResult.reason);
       }
-      if (assignedWorkersResult.status === 'rejected') {
-        console.error('Error fetching assigned workers:', assignedWorkersResult.reason);
+      if (assignedWorkersResult.status === "rejected") {
+        console.error(
+          "Error fetching assigned workers:",
+          assignedWorkersResult.reason
+        );
       }
-      if (shipmentsResult.status === 'rejected') {
-        console.error('Error fetching shipments:', shipmentsResult.reason);
+      if (shipmentsResult.status === "rejected") {
+        console.error("Error fetching shipments:", shipmentsResult.reason);
       }
 
       // Extract successful results
       const shipmentData = shipmentResult.value;
-      const packagesData = packagesResult.status === 'fulfilled' ? packagesResult.value : [];
-      const workersData = workersResult.status === 'fulfilled' ? workersResult.value : [];
-      const skusData = skusResult.status === 'fulfilled' ? skusResult.value : [];
-      const assignedWorkersData = assignedWorkersResult.status === 'fulfilled' ? assignedWorkersResult.value : [];
-      const shipmentsData = shipmentsResult.status === 'fulfilled' ? shipmentsResult.value : [];
+      const packagesData =
+        packagesResult.status === "fulfilled" ? packagesResult.value : [];
+      const workersData =
+        workersResult.status === "fulfilled" ? workersResult.value : [];
+      const skusData =
+        skusResult.status === "fulfilled" ? skusResult.value : [];
+      const assignedWorkersData =
+        assignedWorkersResult.status === "fulfilled"
+          ? assignedWorkersResult.value
+          : [];
+      const shipmentsData =
+        shipmentsResult.status === "fulfilled" ? shipmentsResult.value : [];
 
-      console.log('Shipment Data:', shipmentData);
-      console.log('Packages Data:', packagesData);
-      console.log('Assigned Workers Data:', assignedWorkersData);
+      console.log("Shipment Data:", shipmentData);
+      console.log("Packages Data:", packagesData);
+      console.log("Assigned Workers Data:", assignedWorkersData);
 
       // Filter workers to show only free workers + workers assigned to current shipment
       // Get IDs of workers already assigned to OTHER shipments (not the current one)
       const assignedWorkerIds = new Set();
       if (shipmentsData && Array.isArray(shipmentsData)) {
         shipmentsData
-          .filter((shipment) => 
-            shipment.id !== parseInt(id) && // Exclude current shipment
-            shipment.status && 
-            shipment.status !== 'COMPLETED' // Only consider active shipments
+          .filter(
+            (shipment) =>
+              shipment.id !== parseInt(id) && // Exclude current shipment
+              shipment.status &&
+              shipment.status !== "COMPLETED" // Only consider active shipments
           )
           .forEach((shipment) => {
-            if (shipment.assignedWorkers && Array.isArray(shipment.assignedWorkers)) {
+            if (
+              shipment.assignedWorkers &&
+              Array.isArray(shipment.assignedWorkers)
+            ) {
               shipment.assignedWorkers.forEach((worker) => {
-                if (worker.role === 'WORKER' && worker.id) {
+                if (worker.role === "WORKER" && worker.id) {
                   assignedWorkerIds.add(worker.id);
                 }
               });
@@ -116,7 +146,9 @@ export default function ShipmentEdit() {
 
       // Filter workers: show free workers OR workers assigned to current shipment
       const availableWorkers = workersData.filter(
-        (worker) => !assignedWorkerIds.has(worker.id) || currentShipmentWorkerIds.has(worker.id)
+        (worker) =>
+          !assignedWorkerIds.has(worker.id) ||
+          currentShipmentWorkerIds.has(worker.id)
       );
 
       // Set workers and SKUs
@@ -126,11 +158,15 @@ export default function ShipmentEdit() {
       // Populate form with shipment data
       // Ensure worker IDs are in the same type as the options (numbers)
       const selectedWorkerIds = assignedWorkersData.map((w) => Number(w.id));
-      
+
       setFormData({
-        shipmentType: shipmentData.shipmentType || 'INBOUND',
-        status: shipmentData.status || 'CREATED',
-        deadline: shipmentData.deadline ? (typeof shipmentData.deadline === 'string' ? shipmentData.deadline.split('T')[0] : shipmentData.deadline) : '',
+        shipmentType: shipmentData.shipmentType || "INBOUND",
+        status: shipmentData.status || "CREATED",
+        deadline: shipmentData.deadline
+          ? typeof shipmentData.deadline === "string"
+            ? shipmentData.deadline.split("T")[0]
+            : shipmentData.deadline
+          : "",
         selectedWorkers: selectedWorkerIds,
       });
 
@@ -140,24 +176,35 @@ export default function ShipmentEdit() {
         const formattedPackages = packagesData.map((pkg) => ({
           id: pkg.id,
           // defensive fallbacks to avoid undefined when rendering
-          skuId: pkg.skuId !== undefined && pkg.skuId !== null ? String(pkg.skuId) : '',
-          quantity: pkg.quantity !== undefined && pkg.quantity !== null ? String(pkg.quantity) : '',
+          skuId:
+            pkg.skuId !== undefined && pkg.skuId !== null
+              ? String(pkg.skuId)
+              : "",
+          quantity:
+            pkg.quantity !== undefined && pkg.quantity !== null
+              ? String(pkg.quantity)
+              : "",
         }));
         setPackages(formattedPackages);
         setPackageCount(packagesData.length);
       } else {
         // If no packages, ensure we have at least one empty row
-        setPackages([{ skuId: '', quantity: '' }]);
+        setPackages([{ skuId: "", quantity: "" }]);
         setPackageCount(1);
       }
     } catch (err) {
-      console.error('Error fetching data:', err);
-      console.error('Error details:', err.response?.data);
-      const errorMessage = err.response?.data?.message || 
-                          err.response?.data?.error || 
-                          err.message || 
-                          'Failed to load shipment data';
-      setError(errorMessage === 'Access Denied' ? 'Access Denied: Failed to load shipment data' : errorMessage);
+      console.error("Error fetching data:", err);
+      console.error("Error details:", err.response?.data);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Failed to load shipment data";
+      setError(
+        errorMessage === "Access Denied"
+          ? "Access Denied: Failed to load shipment data"
+          : errorMessage
+      );
     } finally {
       setLoading(false);
     }
@@ -165,7 +212,7 @@ export default function ShipmentEdit() {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError('');
+    setError("");
   };
 
   const handlePackageCountChange = (e) => {
@@ -175,7 +222,7 @@ export default function ShipmentEdit() {
     // Adjust packages array
     const newPackages = [...packages];
     while (newPackages.length < count) {
-      newPackages.push({ skuId: '', quantity: '' });
+      newPackages.push({ skuId: "", quantity: "" });
     }
     while (newPackages.length > count) {
       newPackages.pop();
@@ -190,7 +237,7 @@ export default function ShipmentEdit() {
   };
 
   const handleAddPackage = () => {
-    setPackages([...packages, { skuId: '', quantity: '' }]);
+    setPackages([...packages, { skuId: "", quantity: "" }]);
     setPackageCount(packages.length + 1);
   };
 
@@ -204,7 +251,7 @@ export default function ShipmentEdit() {
 
   const validateForm = () => {
     if (!formData.deadline) {
-      setError('Deadline is required');
+      setError("Deadline is required");
       return false;
     }
 
@@ -221,7 +268,7 @@ export default function ShipmentEdit() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!validateForm()) {
       return;
@@ -265,7 +312,9 @@ export default function ShipmentEdit() {
       // Delete existing packages that are not in the new list
       const existingPackageIds = existingPackages.map((p) => p.id);
       const newPackageIds = packages.filter((p) => p.id).map((p) => p.id);
-      const packagesToDelete = existingPackageIds.filter((id) => !newPackageIds.includes(id));
+      const packagesToDelete = existingPackageIds.filter(
+        (id) => !newPackageIds.includes(id)
+      );
 
       for (const packageId of packagesToDelete) {
         await deleteShipmentItem(packageId);
@@ -286,7 +335,7 @@ export default function ShipmentEdit() {
         shipment: { id: parseInt(id) },
         sku: { id: parseInt(pkg.skuId) },
         quantity: parseInt(pkg.quantity),
-        status: 'CREATED',
+        status: "CREATED",
       }));
 
       if (allPackagesToCreate.length > 0) {
@@ -295,12 +344,12 @@ export default function ShipmentEdit() {
 
       navigate(`/shipments/${id}`);
     } catch (err) {
-      console.error('Error updating shipment:', err);
+      console.error("Error updating shipment:", err);
       const errorMessage =
         err.response?.data?.message ||
         err.response?.data?.error ||
         err.message ||
-        'Failed to update shipment';
+        "Failed to update shipment";
       setError(errorMessage);
     } finally {
       setSaving(false);
@@ -315,12 +364,12 @@ export default function ShipmentEdit() {
   // Debug logging
   useEffect(() => {
     if (!loading) {
-      console.log('=== DEBUG INFO ===');
-      console.log('Workers:', workers);
-      console.log('Worker Options:', workerOptions);
-      console.log('Selected Workers in formData:', formData.selectedWorkers);
-      console.log('SKUs:', skus);
-      console.log('Packages:', packages);
+      console.log("=== DEBUG INFO ===");
+      console.log("Workers:", workers);
+      console.log("Worker Options:", workerOptions);
+      console.log("Selected Workers in formData:", formData.selectedWorkers);
+      console.log("SKUs:", skus);
+      console.log("Packages:", packages);
     }
   }, [loading, workers, formData.selectedWorkers, skus, packages]);
 
@@ -334,7 +383,9 @@ export default function ShipmentEdit() {
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Shipment SH-{id}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Edit Shipment SH-{id}
+          </h1>
           <p className="text-gray-600 mt-1">Update shipment details</p>
         </div>
       </div>
@@ -351,8 +402,8 @@ export default function ShipmentEdit() {
               onChange={handleChange}
               required
               options={[
-                { value: 'INBOUND', label: 'Inbound' },
-                { value: 'OUTBOUND', label: 'Outbound' },
+                { value: "INBOUND", label: "Inbound" },
+                { value: "OUTBOUND", label: "Outbound" },
               ]}
             />
 
@@ -363,10 +414,10 @@ export default function ShipmentEdit() {
               onChange={handleChange}
               required
               options={[
-                { value: 'CREATED', label: 'Created' },
-                { value: 'ARRIVED', label: 'Arrived' },
-                { value: 'PUTAWAY', label: 'Putaway' },
-                { value: 'COMPLETED', label: 'Completed' },
+                { value: "CREATED", label: "Created" },
+                { value: "ARRIVED", label: "Arrived" },
+                { value: "PUTAWAY", label: "Putaway" },
+                { value: "COMPLETED", label: "Completed" },
               ]}
             />
           </div>
@@ -378,7 +429,7 @@ export default function ShipmentEdit() {
             value={formData.deadline}
             onChange={handleChange}
             required
-            error={error && !formData.deadline ? 'Deadline is required' : ''}
+            error={error && !formData.deadline ? "Deadline is required" : ""}
           />
 
           <MultiSelect
@@ -435,7 +486,7 @@ export default function ShipmentEdit() {
 
           <div className="flex gap-4 pt-4">
             <Button type="submit" variant="primary" disabled={saving}>
-              {saving ? 'Saving...' : 'Update Shipment'}
+              {saving ? "Saving..." : "Update Shipment"}
             </Button>
             <Button
               type="button"
@@ -450,4 +501,3 @@ export default function ShipmentEdit() {
     </div>
   );
 }
-

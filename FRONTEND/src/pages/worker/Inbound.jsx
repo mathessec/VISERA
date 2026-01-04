@@ -88,11 +88,9 @@ export default function Inbound() {
       const result = await verifyPackage(selectedPackage.id, imageFile);
       setVerificationResult(result);
       
-      // If successful, reload packages to update status
-      if (result.matched && result.autoAssigned) {
-        const items = await getShipmentItemsWithLocations(selectedShipment.id);
-        setPackages(items);
-      }
+      // Reload packages to update status for both match and mismatch
+      const items = await getShipmentItemsWithLocations(selectedShipment.id);
+      setPackages(items);
     } catch (err) {
       setError(err.response?.data?.message || 'Verification failed');
     } finally {
@@ -108,8 +106,12 @@ export default function Inbound() {
     setImagePreview(null);
   };
 
+  const isPackageVerified = (pkg) => {
+    return pkg.status === 'RECEIVED' || pkg.status === 'VERIFIED';
+  };
+
   const getVerifiedCount = () => {
-    return packages.filter(p => p.status === 'RECEIVED').length;
+    return packages.filter(p => isPackageVerified(p)).length;
   };
 
   if (loading) return <Loading text="Loading inbound shipments..." />;
@@ -156,8 +158,14 @@ export default function Inbound() {
                       <p className="font-medium mt-1">Packages: {shipment.packageCount || 0}</p>
                     </div>
                     <div className="pt-2">
-                      <Progress value={12} max={45} className="mb-2" />
-                      <p className="text-xs text-gray-500">12 / 45 packages verified</p>
+                      <Progress 
+                        value={shipment.verifiedCount || 0} 
+                        max={shipment.packageCount || 1} 
+                        className="mb-2" 
+                      />
+                      <p className="text-xs text-gray-500">
+                        {shipment.verifiedCount || 0} / {shipment.packageCount || 0} packages verified
+                      </p>
                     </div>
                     <Button
                       variant="primary"
@@ -190,6 +198,7 @@ export default function Inbound() {
                     setSelectedShipment(null);
                     setSelectedPackage(null);
                     setVerificationResult(null);
+                    fetchInboundShipments(); // Refresh the shipment list
                   }}
                 >
                   Back to List
@@ -212,11 +221,11 @@ export default function Inbound() {
                   {packages.map((pkg, index) => (
                     <div
                       key={pkg.id}
-                      onClick={() => pkg.status !== 'RECEIVED' && handlePackageSelect(pkg)}
+                      onClick={() => !isPackageVerified(pkg) && handlePackageSelect(pkg)}
                       className={`p-4 rounded-lg border cursor-pointer transition-all ${
                         selectedPackage?.id === pkg.id
                           ? 'border-blue-500 bg-blue-50'
-                          : pkg.status === 'RECEIVED'
+                          : isPackageVerified(pkg)
                           ? 'border-green-200 bg-green-50 cursor-not-allowed'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
@@ -225,7 +234,7 @@ export default function Inbound() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-medium text-gray-900">Package #{index + 1}</span>
-                            {pkg.status === 'RECEIVED' && (
+                            {isPackageVerified(pkg) && (
                               <CheckCircle className="text-green-600" size={16} />
                             )}
                           </div>
@@ -239,7 +248,7 @@ export default function Inbound() {
                             </div>
                           )}
                         </div>
-                        <Badge variant={pkg.status === 'RECEIVED' ? 'green' : 'gray'}>
+                        <Badge variant={isPackageVerified(pkg) ? 'green' : 'gray'}>
                           {pkg.status || 'PENDING'}
                         </Badge>
                       </div>

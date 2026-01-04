@@ -17,5 +17,6 @@ public class ShipmentDTO {
     private LocalDateTime createdAt;
     private List<UserDTO> assignedWorkers;
     private int packageCount;
+    private int verifiedCount;
 }
 
