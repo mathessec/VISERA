@@ -153,8 +153,14 @@ public class SkuServiceImpl implements SkuService {
             dto.setColor(sku.getColor());
             dto.setDimensions(sku.getDimensions());
             dto.setWeight(sku.getWeight());
-            dto.setProductId(sku.getProduct().getId());
-            dto.setProductName(sku.getProduct().getName());
+            // Defensive null check for product relationship
+            if (sku.getProduct() != null) {
+                dto.setProductId(sku.getProduct().getId());
+                dto.setProductName(sku.getProduct().getName());
+            } else {
+                dto.setProductId(0L);
+                dto.setProductName("Unknown Product");
+            }
             dto.setTotalQuantity(totalQuantity);
             dto.setBinLocation(binLocation);
             dto.setStatus(status);

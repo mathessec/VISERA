@@ -28,7 +28,7 @@ export default function PackageInputRow({
           <option value="">Select SKU</option>
           {skuList.map((sku) => (
             <option key={sku.id} value={String(sku.id)}>
-              {sku.skuCode} - {sku.product?.name || 'Unknown Product'}
+              {sku.skuCode} - {sku.productName || 'Unknown Product'}
             </option>
           ))}
         </select>
