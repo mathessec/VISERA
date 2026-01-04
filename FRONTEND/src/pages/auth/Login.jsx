@@ -174,7 +174,7 @@ export default function Login() {
           </form>
 
           <div className="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
-            © 2024 VISERA. All rights reserved.
+            © 2026 VISERA. All rights reserved.
           </div>
         </div>
       </div>
