@@ -94,6 +94,9 @@ export default function Outbound() {
       const items = await getShipmentItemsWithLocations(selectedShipment.id);
       setPackages(items);
       
+      // Refetch shipments to update verifiedCount in the list
+      await fetchOutboundShipments();
+      
       // Navigate to picking page if verification is successful
       if (result.matched && result.autoAssigned) {
         // Small delay to show success message before navigation
@@ -118,6 +121,12 @@ export default function Outbound() {
 
   const getVerifiedCount = () => {
     return packages.filter(p => p.status === 'RECEIVED' || p.status === 'DISPATCHED').length;
+  };
+
+  const areAllPackagesVerified = (shipment) => {
+    const verifiedCount = shipment.verifiedCount || 0;
+    const packageCount = shipment.packageCount || 0;
+    return packageCount > 0 && verifiedCount >= packageCount;
   };
 
   if (loading) return <Loading text="Loading outbound shipments..." />;
@@ -179,14 +188,25 @@ export default function Outbound() {
                         <p className="text-xs text-gray-500">No packages</p>
                       )}
                     </div>
-                    <Button
-                      variant="primary"
-                      className="w-full"
-                      onClick={() => handleShipmentSelect(shipment)}
-                    >
-                      <Scan size={20} className="mr-2" />
-                      Start Processing
-                    </Button>
+                    {areAllPackagesVerified(shipment) ? (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        disabled
+                      >
+                        <CheckCircle size={20} className="mr-2" />
+                        All Packages Verified
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        className="w-full"
+                        onClick={() => handleShipmentSelect(shipment)}
+                      >
+                        <Scan size={20} className="mr-2" />
+                        Start Processing
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))
@@ -206,10 +226,14 @@ export default function Outbound() {
                 </div>
                 <Button
                   variant="outline"
-                  onClick={() => {
+                  onClick={async () => {
+                    // Refetch shipments before going back to list
+                    await fetchOutboundShipments();
                     setSelectedShipment(null);
                     setSelectedPackage(null);
                     setVerificationResult(null);
+                    setImageFile(null);
+                    setImagePreview(null);
                   }}
                 >
                   Back to List

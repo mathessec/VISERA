@@ -59,10 +59,17 @@ public class EntityMapper {
         int packageCount = shipmentItemRepository.findByShipmentId(shipment.getId()).size();
         dto.setPackageCount(packageCount);
         
-        // Verified count (items with status VERIFIED or RECEIVED)
+        // Verified count (items with status VERIFIED, RECEIVED, or DISPATCHED)
+        // For OUTBOUND: VERIFIED → RECEIVED → DISPATCHED (all count as verified)
+        // For INBOUND: VERIFIED → RECEIVED (both count as verified)
         int verifiedCount = shipmentItemRepository.findByShipmentId(shipment.getId())
                 .stream()
-                .filter(item -> "VERIFIED".equals(item.getStatus()) || "RECEIVED".equals(item.getStatus()))
+                .filter(item -> {
+                    String status = item.getStatus();
+                    return "VERIFIED".equals(status) 
+                        || "RECEIVED".equals(status) 
+                        || "DISPATCHED".equals(status);
+                })
                 .mapToInt(item -> 1)
                 .sum();
         dto.setVerifiedCount(verifiedCount);
